@@ -20,12 +20,12 @@ const factory = sightglass => {
 
   // Initializes a new instance of a component on the specified element and
   // returns a Rivets.View instance.
-  rivets.init = (component, el, data = {}) => {
+  rivets.init = (componentName, el, data = {}) => {
     if (!el) {
       el = document.createElement('div')
     }
 
-    let component = rivets.components[component]
+    let component = rivets.components[componentName]
     el.innerHTML = component.template.call(rivets, el)
     let scope = component.initialize.call(rivets, el, data)
 
@@ -37,4 +37,4 @@ const factory = sightglass => {
   return rivets
 }
 
-export default factory(sightglass)
+module.exports = factory(sightglass);
