@@ -45,13 +45,13 @@ export default class View {
   }
 
   options() {
-    let options = {}
+    let result = {}
 
     EXTENSIONS.concat(OPTIONS).forEach(option => {
-      options[option] = this[option]
+      result[option] = this[option]
     })
 
-    return options
+    return result;
   }
 
   // Regular expression used to match binding attributes.

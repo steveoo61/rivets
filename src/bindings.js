@@ -267,6 +267,7 @@ export class ComponentBinding extends Binding {
   // element is passed in along with the component type. Attributes and scope
   // inflections are determined based on the components defined attributes.
   constructor(view, el, type) {
+    super(view, el, type)
     this.view = view
     this.el = el
     this.type = type
@@ -418,6 +419,7 @@ export class ComponentBinding extends Binding {
 export class TextBinding extends Binding {
   // Initializes a text binding for the specified view and text node.
   constructor(view, el, type, keypath, options = {}) {
+    super(view, el, type, keypath, options)
     this.view = view
     this.el = el
     this.type = type
