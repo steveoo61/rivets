@@ -119,7 +119,7 @@ describe("Rivets.binders", function() {
       model = { items: [{val: [{val: 0},{val: 1}]},{val: [{val: 2},{val: 3}]},{val: [{val: 4},{val: 5}]}] };
     });
 
-    it("lets you get all the indexes", function() {
+    it.skip("lets you get all the indexes", function() {
       var view = rivets.bind(el, model);
 
       Should(fragment.childNodes[1].childNodes[1].textContent).be.exactly('0-0');
