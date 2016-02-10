@@ -1299,7 +1299,7 @@
       if (callbacks[keypath] == null) {
         callbacks[keypath] = [];
         desc = Object.getOwnPropertyDescriptor(obj, keypath);
-        if (!((desc != null ? desc.get : void 0) || (desc != null ? desc.set : void 0))) {
+        if (!desc || !(desc.get || desc.set || !desc.configurable)) {
           value = obj[keypath];
           Object.defineProperty(obj, keypath, {
             enumerable: true,
