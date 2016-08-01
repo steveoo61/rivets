@@ -115,7 +115,7 @@
 
   // Updates the keypath. This is called when any intermediary key is changed.
   Observer.prototype.update = function() {
-    var next, oldValue
+    var next, oldValue, newValue
 
     if ((next = this.realize()) !== this.target) {
       if (isObject(this.target)) {
@@ -128,8 +128,8 @@
 
       oldValue = this.value()
       this.target = next
-
-      if (this.value() !== oldValue) this.callback()
+      newValue = this.value()
+      if (newValue !== oldValue || newValue instanceof Function) this.callback()
     } else if (next instanceof Array) {
       this.callback()
     }
@@ -395,6 +395,11 @@
           type: this.types.primitive,
           value: void 0
         };
+      } else if (string === '') {
+        return {
+          type: this.types.primitive,
+          value: void 0
+        };
       } else if (isNaN(Number(string)) === false) {
         return {
           type: this.types.primitive,
@@ -540,7 +545,7 @@
       options = {};
       pipes = (function() {
         var _i, _len, _ref1, _results;
-        _ref1 = declaration.match(/((?:'[^']*')*(?:(?:[^\|']+(?:'[^']*')*[^\|']*)+|[^\|]+))|^$/g);
+        _ref1 = declaration.match(/((?:'[^']*')*(?:(?:[^\|']*(?:'[^']*')+[^\|']*)+|[^\|]+))|^$/g);
         _results = [];
         for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
           pipe = _ref1[_i];
@@ -1074,7 +1079,7 @@
           option = _ref5[_j];
           options[option] = (_ref6 = this.component[option]) != null ? _ref6 : this.view[option];
         }
-        this.componentView = new Rivets.View(this.el, scope, options);
+        this.componentView = new Rivets.View(Array.prototype.slice.call(this.el.childNodes), scope, options);
         this.componentView.bind();
         _ref7 = this.observers;
         for (key in _ref7) {
@@ -1260,8 +1265,10 @@
       }
     },
     unbind: function() {
-      var _ref1;
-      return (_ref1 = this.nested) != null ? _ref1.unbind() : void 0;
+      if (this.nested) {
+        this.nested.unbind();
+        return this.bound = false;
+      }
     },
     routine: function(el, value) {
       var key, model, models, _ref1;
