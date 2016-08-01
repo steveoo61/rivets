@@ -160,7 +160,29 @@ describe('Rivets.Binding', function() {
       binding.binder.routine.calledWith(el, binding.model.foo).should.be.true
     })
   });
+  
+  describe('prototype functions', function() {
+    it('does call routine if observed value is a function', function() {
+      var Employee = function(name) {
+        this.name = name
+      };
+      Employee.prototype.getName = function() {
+        return this.name;
+      };
+      var model = {employee: new Employee("John")};
 
+      el = document.createElement('div');
+      el.setAttribute('data-text', 'employee.getName');
+
+      view = rivets.bind(el, model);
+      binding = view.bindings[0];
+
+      sinon.spy(binding.binder, 'routine');
+      model.employee = new Employee("Peter");
+      binding.binder.routine.calledWith(el, "Peter").should.be.true
+    });
+  });
+  
   describe('publish()', function() {
     var numberInput;
     it("should publish the value of a number input", function() {
