@@ -43,6 +43,7 @@ module.exports = {
   ],
 
   resolve: {
+    alias: {sightglass: '../lib/sightglass.js'},
     extensions: ['', '.js']
   }
 };

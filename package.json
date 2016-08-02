@@ -15,9 +15,6 @@
     "type": "git",
     "url": "https://github.com/mikeric/rivets.git"
   },
-  "dependencies": {
-    "sightglass": "~0.2.4"
-  },
   "scripts": {
     "pretest": "webpack --config=webpack.spec.config.js",
     "test": "mocha-phantomjs spec/runner.html",
