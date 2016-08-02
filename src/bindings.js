@@ -2,6 +2,8 @@ import rivets from './rivets'
 import {parseType} from './parsers'
 import {getInputValue} from './util'
 import {EXTENSIONS, OPTIONS} from './constants'
+//there's a cyclic dependency that makes imported View a dummy object
+//import View from './view'
 
 const defined = (value) => {
   return value !== undefined && value !== null
@@ -277,19 +279,18 @@ export class ComponentBinding extends Binding {
 
     let bindingRegExp = view.bindingRegExp()
 
-    if (this.el.attributes) {
-      this.el.attributes.forEach(attribute => {
-        if (!bindingRegExp.test(attribute.name)) {
-          let propertyName = this.camelCase(attribute.name)
-          let stat = this.component.static
+    for (let i = 0, len = el.attributes.length; i < len; i++) {
+      let attribute = el.attributes[i];
+      if (!bindingRegExp.test(attribute.name)) {
+        let propertyName = this.camelCase(attribute.name)
+        let stat = this.component.static
 
-          if (stat && stat.indexOf(propertyName) > -1) {
-            this.static[propertyName] = attribute.value
-          } else {
-            this.observers[propertyName] = attribute.value
-          }
+        if (stat && stat.indexOf(propertyName) > -1) {
+          this.static[propertyName] = attribute.value
+        } else {
+          this.observers[propertyName] = attribute.value
         }
-      })
+      }
     }
   }
 
@@ -379,8 +380,10 @@ export class ComponentBinding extends Binding {
         }
       })
 
-      this.componentView = new View(this.el, scope, options)
-      this.componentView.bind()
+      //there's a cyclic dependency that makes imported View a dummy object. Use rivets.bind
+      //this.componentView = new View(this.el, scope, options)
+      //this.componentView.bind()
+      this.componentView = rivets.bind(this.el, scope, options);
 
       Object.keys(this.observers).forEach(key => {
         let observer = this.observers[key]
