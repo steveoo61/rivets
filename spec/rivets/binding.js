@@ -1,305 +1,398 @@
 describe('Rivets.Binding', function() {
-  var model, el, view, binding, opts
+  var model, el, view, binding, originalPrefix, adapter;
 
   beforeEach(function() {
-    rivets.prefix = 'data'
-    adapter = rivets.adapters['.']
+    originalPrefix = rivets.prefix;
+    rivets.prefix = 'data';
+    adapter = rivets.adapters['.'];
 
-    el = document.createElement('div')
-    el.setAttribute('data-text', 'obj.name')
+    el = document.createElement('div');
+    el.setAttribute('data-text', 'obj.name');
 
-    view = rivets.bind(el, {obj: {name: 'test'}})
-    binding = view.bindings[0]
+    view = rivets.bind(el, {obj: {name: 'test'}});
+    binding = view.bindings[0];
     model = binding.model
-  })
+  });
+
+  afterEach(function() {
+    rivets.prefix = originalPrefix
+  });
 
   it('gets assigned the proper binder routine matching the identifier', function() {
     binding.binder.routine.should.equal(rivets.binders.text)
-  })
+  });
+
+  describe('when bind to non configurable properties', function() {
+    beforeEach(function () {
+      data = {
+        name: 'x',
+        items: []
+      };
+      Object.defineProperty(data, 'name', {
+        enumerable: true,
+        configurable: false,
+        writable: true,
+        value: 'y'
+      });
+      el.setAttribute('data-show', 'obj.items.length')
+    });
+
+    it('does not throw', function() {
+      (function(){
+        rivets.bind(el, { obj: data})
+      }).should.not.throw();
+    })
+
+  });
+
+  describe('with formatters', function() {
+    var valueInput;
+    it('register all formatters', function() {
+
+      valueInput = document.createElement('input');
+      valueInput.setAttribute('type','text');
+      valueInput.setAttribute('data-value', "obj.name | awesome | radical | totally");
+
+      view = rivets.bind(valueInput, {obj: { name: 'nothing' }});
+      binding = view.bindings[0];
+
+      binding.formatters.should.be.eql(['awesome', 'radical', 'totally'])
+    });
+
+    it('allows arguments with pipes', function () {
+
+      valueInput = document.createElement('input');
+      valueInput.setAttribute('type', 'text');
+      valueInput.setAttribute('data-value', "obj.name | awesome | totally 'arg | with || pipes' 'and more args' | and 'others formatters' with 'pi||pes'");
+
+      view = rivets.bind(valueInput, { obj: { name: 'nothing' } });
+      binding = view.bindings[0];
+
+      binding.formatters.should.be.eql(['awesome', "totally 'arg | with || pipes' 'and more args'", "and 'others formatters' with 'pi||pes'"])
+    })
+  });
 
   describe('bind()', function() {
     it('subscribes to the model for changes via the adapter', function() {
-      sinon.spy(adapter, 'observe')
-      binding.bind()
+      sinon.spy(adapter, 'observe');
+      binding.bind();
       adapter.observe.calledWith(model, 'name', binding.sync).should.be.true
-    })
+    });
 
     it("calls the binder's bind method if one exists", function() {
-      binding.bind.should.not.throw()
+      binding.bind.should.not.throw();
 
-      binding.binder.bind = function(){}
-      sinon.spy(binding.binder, 'bind')
-      binding.bind()
+      binding.binder.bind = function(){};
+      sinon.spy(binding.binder, 'bind');
+      binding.bind();
       binding.binder.bind.called.should.be.true
-    })
+    });
 
     describe('with preloadData set to true', function() {
       beforeEach(function() {
         rivets.preloadData = true
-      })
+      });
 
       it('sets the initial value', function() {
-        sinon.spy(binding, 'set')
-        binding.bind()
+        sinon.spy(binding, 'set');
+        binding.bind();
         binding.set.calledWith('test').should.be.true
       })
-    })
+    });
 
     describe('with dependencies', function() {
       beforeEach(function() {
         binding.options.dependencies = ['.fname', '.lname']
-      })
+      });
 
       it('sets up observers on the dependant attributes', function() {
-        binding.bind()
-        adapter.observe.calledWith(model, 'fname', binding.sync).should.be.true
+        binding.bind();
+        adapter.observe.calledWith(model, 'fname', binding.sync).should.be.true;
         adapter.observe.calledWith(model, 'lname', binding.sync).should.be.true
       })
     })
-  })
+  });
 
   describe('unbind()', function() {
     describe('without a binder.unbind defined', function() {
       it('should not throw an error', function() {
         binding.unbind.should.not.throw()
       })
-    })
+    });
 
     describe('with a binder.unbind defined', function() {
       beforeEach(function() {
         binding.binder.unbind = function(){}
-      
-      })
+      });
 
       it('should not throw an error', function() {
         binding.unbind.should.not.throw()
-      })
+      });
 
       it("calls the binder's unbind method", function() {
-        sinon.spy(binding.binder, 'unbind')
-        binding.unbind()
+        sinon.spy(binding.binder, 'unbind');
+        binding.unbind();
         binding.binder.unbind.called.should.be.true
       })
     })
-  })
+  });
 
   describe('set()', function() {
     it('performs the binding routine with the supplied value', function() {
-      sinon.spy(binding.binder, 'routine')
-      binding.set('sweater')
+      sinon.spy(binding.binder, 'routine');
+      binding.set('sweater');
       binding.binder.routine.calledWith(el, 'sweater').should.be.true
-    })
+    });
 
     it('applies any formatters to the value before performing the routine', function() {
-      view.formatters.awesome = function(value) { return 'awesome ' + value }
+      view.formatters.awesome = function(value) { return 'awesome ' + value };
 
-      binding.formatters.push('awesome')
-      sinon.spy(binding.binder, 'routine')
-      binding.set('sweater')
+      binding.formatters.push('awesome');
+      sinon.spy(binding.binder, 'routine');
+      binding.set('sweater');
       binding.binder.routine.calledWith(el, 'awesome sweater').should.be.true
-    })
+    });
 
     it('calls methods with the object as context', function() {
-      binding.model = {foo: 'bar'}
-      sinon.spy(binding.binder, 'routine')
-      binding.set(function() { return this.foo })
+      binding.model = {foo: 'bar'};
+      sinon.spy(binding.binder, 'routine');
+      binding.set(function() { return this.foo });
       binding.binder.routine.calledWith(el, binding.model.foo).should.be.true
     })
-  })
+  });
+  
+  describe('prototype functions', function() {
+    it('does call routine if observed value is a function', function() {
+      var Employee = function(name) {
+        this.name = name
+      };
+      Employee.prototype.getName = function() {
+        return this.name;
+      };
+      var model = {employee: new Employee("John")};
 
+      el = document.createElement('div');
+      el.setAttribute('data-text', 'employee.getName');
+
+      view = rivets.bind(el, model);
+      binding = view.bindings[0];
+
+      sinon.spy(binding.binder, 'routine');
+      model.employee = new Employee("Peter");
+      binding.binder.routine.calledWith(el, "Peter").should.be.true
+    });
+  });
+  
   describe('publish()', function() {
+    var numberInput;
     it("should publish the value of a number input", function() {
-      numberInput = document.createElement('input')
-      numberInput.setAttribute('type', 'number')
-      numberInput.setAttribute('data-value', 'obj.num')
+      numberInput = document.createElement('input');
+      numberInput.setAttribute('type', 'number');
+      numberInput.setAttribute('data-value', 'obj.num');
 
-      view = rivets.bind(numberInput, {obj: {num: 42}})
-      binding = view.bindings[0]
-      model = binding.model
+      view = rivets.bind(numberInput, {obj: {num: 42}});
+      binding = view.bindings[0];
+      model = binding.model;
 
-      numberInput.value = 42
+      numberInput.value = 42;
 
-      sinon.spy(adapter, 'set')
-      binding.publish({target: numberInput})
+      sinon.spy(adapter, 'set');
+      binding.publish({target: numberInput});
       adapter.set.calledWith(model, 'num', '42').should.be.true
     })
-  })
+  });
 
   describe('publishTwoWay()', function() {
+    var numberInput, valueInput;
     it('applies a two-way read formatter to function same as a single-way', function() {
       view.formatters.awesome = {
         read: function(value) { return 'awesome ' + value }
-      }
+      };
 
-      binding.formatters.push('awesome')
-      sinon.spy(binding.binder, 'routine')
-      binding.set('sweater')
+      binding.formatters.push('awesome');
+      sinon.spy(binding.binder, 'routine');
+      binding.set('sweater');
       binding.binder.routine.calledWith(el, 'awesome sweater').should.be.true
-    })
+    });
 
     it("should publish the value of a number input", function() {
       rivets.formatters.awesome = {
         publish: function(value) { return 'awesome ' + value }
-      }
+      };
 
-      numberInput = document.createElement('input')
-      numberInput.setAttribute('type', 'number')
-      numberInput.setAttribute('data-value', 'obj.num | awesome')
+      numberInput = document.createElement('input');
+      numberInput.setAttribute('type', 'number');
+      numberInput.setAttribute('data-value', 'obj.num | awesome');
 
-      view = rivets.bind(numberInput, {obj: {num: 42}})
-      binding = view.bindings[0]
-      model = binding.model
+      view = rivets.bind(numberInput, {obj: {num: 42}});
+      binding = view.bindings[0];
+      model = binding.model;
 
-      numberInput.value = 42
+      numberInput.value = 42;
 
-      binding.publish({target: numberInput})
+      binding.publish({target: numberInput});
       adapter.set.calledWith(model, 'num', 'awesome 42').should.be.true
-    })
+    });
 
     it("should format a value in both directions", function() {
       rivets.formatters.awesome = {
         publish: function(value) { return 'awesome ' + value },
         read: function(value) { return value + ' is awesome' }
-      }
+      };
 
-      valueInput = document.createElement('input')
-      valueInput.setAttribute('type','text')
-      valueInput.setAttribute('data-value', 'obj.name | awesome')
+      valueInput = document.createElement('input');
+      valueInput.setAttribute('type','text');
+      valueInput.setAttribute('data-value', 'obj.name | awesome');
 
-      view = rivets.bind(valueInput, {obj: { name: 'nothing' }})
-      binding = view.bindings[0]
-      model = binding.model
+      view = rivets.bind(valueInput, {obj: { name: 'nothing' }});
+      binding = view.bindings[0];
+      model = binding.model;
 
-      valueInput.value = 'charles'
-      binding.publish({target: valueInput})
-      adapter.set.calledWith(model, 'name', 'awesome charles').should.be.true
+      valueInput.value = 'charles';
+      binding.publish({target: valueInput});
+      adapter.set.calledWith(model, 'name', 'awesome charles').should.be.true;
 
-      sinon.spy(binding.binder, 'routine')
-      binding.set('fred')
+      sinon.spy(binding.binder, 'routine');
+      binding.set('fred');
       binding.binder.routine.calledWith(valueInput, 'fred is awesome').should.be.true
-    })
+    });
 
     it("should not fail or format if the specified binding function doesn't exist", function() {
-      rivets.formatters.awesome = { }
-      valueInput = document.createElement('input')
-      valueInput.setAttribute('type','text')
-      valueInput.setAttribute('data-value', 'obj.name | awesome')
+      rivets.formatters.awesome = { };
+      valueInput = document.createElement('input');
+      valueInput.setAttribute('type','text');
+      valueInput.setAttribute('data-value', 'obj.name | awesome');
 
-      view = rivets.bind(valueInput, {obj: { name: 'nothing' }})
-      binding = view.bindings[0]
-      model = binding.model
+      view = rivets.bind(valueInput, {obj: { name: 'nothing' }});
+      binding = view.bindings[0];
+      model = binding.model;
 
-      valueInput.value = 'charles'
-      binding.publish({target: valueInput})
-      adapter.set.calledWith(model, 'name', 'charles').should.be.true
+      valueInput.value = 'charles';
+      binding.publish({target: valueInput});
+      adapter.set.calledWith(model, 'name', 'charles').should.be.true;
 
-      binding.set('fred')
+      binding.set('fred');
       binding.binder.routine.calledWith(valueInput, 'fred').should.be.true
-    })
+    });
 
     it("should apply read binders left to right, and write binders right to left", function() {
       rivets.formatters.totally = {
         publish: function(value) { return value + ' totally' },
         read: function(value) { return value + ' totally' }
-      }
+      };
 
       rivets.formatters.awesome = {
         publish: function(value) { return value + ' is awesome' },
         read: function(value) { return value + ' is awesome' }
-      }
+      };
 
-      valueInput = document.createElement('input')
-      valueInput.setAttribute('type','text')
-      valueInput.setAttribute('data-value', 'obj.name | awesome | totally')
+      valueInput = document.createElement('input');
+      valueInput.setAttribute('type','text');
+      valueInput.setAttribute('data-value', 'obj.name | awesome | totally');
 
-      view = rivets.bind(valueInput, {obj: { name: 'nothing' }})
-      binding = view.bindings[0]
-      model = binding.model
+      view = rivets.bind(valueInput, {obj: { name: 'nothing' }});
+      binding = view.bindings[0];
+      model = binding.model;
 
-      binding.set('fred')
-      binding.binder.routine.calledWith(valueInput, 'fred is awesome totally').should.be.true
+      binding.set('fred');
+      binding.binder.routine.calledWith(valueInput, 'fred is awesome totally').should.be.true;
 
-      valueInput.value = 'fred'
-      binding.publish({target: valueInput})
+      valueInput.value = 'fred';
+      binding.publish({target: valueInput});
       adapter.set.calledWith(model, 'name', 'fred totally is awesome').should.be.true
-    })
+    });
 
     it("binders in a chain should be skipped if they're not there", function() {
       rivets.formatters.totally = {
         publish: function(value) { return value + ' totally' },
         read: function(value) { return value + ' totally' }
-      }
+      };
 
       rivets.formatters.radical = {
-        publish: function(value) { return value + ' is radical' },
-      }
+        publish: function(value) { return value + ' is radical' }
+      };
 
-      rivets.formatters.awesome = function(value) { return value + ' is awesome' }
+      rivets.formatters.awesome = function(value) { return value + ' is awesome' };
 
-      valueInput = document.createElement('input')
-      valueInput.setAttribute('type','text')
-      valueInput.setAttribute('data-value', 'obj.name | awesome | radical | totally')
+      valueInput = document.createElement('input');
+      valueInput.setAttribute('type','text');
+      valueInput.setAttribute('data-value', 'obj.name | awesome | radical | totally');
 
-      view = rivets.bind(valueInput, {obj: { name: 'nothing' }})
-      binding = view.bindings[0]
-      model = binding.model
+      view = rivets.bind(valueInput, {obj: { name: 'nothing' }});
+      binding = view.bindings[0];
+      model = binding.model;
 
-      binding.set('fred')
-      binding.binder.routine.calledWith(valueInput, 'fred is awesome totally').should.be.true
+      binding.set('fred');
+      binding.binder.routine.calledWith(valueInput, 'fred is awesome totally').should.be.true;
 
-      valueInput.value = 'fred'
-      binding.publish({target: valueInput})
+      valueInput.value = 'fred';
+      binding.publish({target: valueInput});
       adapter.set.calledWith(model, 'name', 'fred totally is radical').should.be.true
     })
-  })
+  });
 
   describe('formattedValue()', function() {
     it('applies the current formatters on the supplied value', function() {
-      view.formatters.awesome = function(value) { return 'awesome ' + value }
-      binding.formatters.push('awesome')
+      view.formatters.awesome = function(value) { return 'awesome ' + value };
+      binding.formatters.push('awesome');
       binding.formattedValue('hat').should.equal('awesome hat')
-    })
+    });
 
     describe('with a multi-argument formatter string', function() {
       beforeEach(function() {
         view.formatters.awesome = function(value, prefix) {
           return prefix + ' awesome ' + value
-        }
+        };
 
         binding.formatters.push("awesome 'super'")
-      })
+      });
 
       it('applies the formatter with arguments', function() {
         binding.formattedValue('jacket').should.equal('super awesome jacket')
       })
+    });
+
+    describe('with a formatter string with pipes in argument', function() {
+      beforeEach(function () {
+
+        view.formatters.totally = function (value, prefix) {
+          return prefix + ' totally ' + value
+        };
+
+        binding.formatters.push("totally 'arg | with || pipes'")
+      });
+
+      it('applies the formatter with arguments with pipes', function () {
+        binding.formattedValue('jacket').should.equal('arg | with || pipes totally jacket')
+      })
     })
-  })
+  });
 
   describe('getValue()', function() {
     it('should use binder.getValue() if present', function() {
-      binding.binder.getValue = function(el) {
+      binding.binder.getValue = function() {
         return 'foo'
-      }
+      };
 
       binding.getValue(el).should.equal('foo')
-    })
+    });
 
     it('binder.getValue() should have access to passed element', function() {
       binding.binder.getValue = function(el) {
         return el.dataset.foo
-      }
+      };
 
-      el.dataset.foo = 'bar'
+      el.dataset.foo = 'bar';
       binding.getValue(el).should.equal('bar')
-    })
+    });
 
     it('binder.getValue() should have access to binding', function() {
-      binding.binder.getValue = function(el) {
+      binding.binder.getValue = function() {
         return this.foo
-      }
+      };
 
-      binding.foo = 'bar'
+      binding.foo = 'bar';
       binding.getValue(el).should.equal('bar')
     })
   })
-})
+});
