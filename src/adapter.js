@@ -124,7 +124,7 @@ const adapter = {
       callbacks[keypath] = []
       let desc = Object.getOwnPropertyDescriptor(obj, keypath)
 
-      if (!(desc && (desc.get || desc.set))) {
+      if (!desc || !(desc.get || desc.set || !desc.configurable)) {
         let value = obj[keypath]
 
         Object.defineProperty(obj, keypath, {
