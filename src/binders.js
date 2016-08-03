@@ -125,9 +125,10 @@ const binders = {
       } else {
         if (el.type === 'select-multiple') {
           if (value instanceof Array) {
-            Array.from(el.options).forEach(option => {
+            for (let i = 0; i < el.length; i++) {
+              let option = el[i];
               option.selected = value.indexOf(option.value) > -1
-            })
+            }
           }
         } else if (getString(value) !== getString(el.value)) {
           el.value = defined(value) ? value : ''
