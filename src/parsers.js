@@ -18,7 +18,7 @@ export function parseType(string) {
     value = null
   } else if (string === 'undefined') {
     value = undefined
-  } else if (isNaN(Number(string)) === false) {
+  } else if (!isNaN(string)) {
     value = Number(string)
   } else {
     type = KEYPATH
