@@ -70,13 +70,17 @@ export class Binding {
   }
 
   parseTarget() {
-    let token = parseType(this.keypath)
+    if (this.keypath) {
+      let token = parseType(this.keypath)
 
-    if (token.type === 0) {
-      this.value = token.value
+      if (token.type === 0) {
+        this.value = token.value
+      } else {
+        this.observer = this.observe(this.view.models, this.keypath, this.sync)
+        this.model = this.observer.target
+      }
     } else {
-      this.observer = this.observe(this.view.models, this.keypath, this.sync)
-      this.model = this.observer.target
+      this.value = undefined;
     }
   }
 
@@ -383,7 +387,7 @@ export class ComponentBinding extends Binding {
       //there's a cyclic dependency that makes imported View a dummy object. Use rivets.bind
       //this.componentView = new View(this.el, scope, options)
       //this.componentView.bind()
-      this.componentView = rivets.bind(this.el, scope, options);
+      this.componentView = rivets.bind(Array.prototype.slice.call(this.el.childNodes), scope, options);
 
       Object.keys(this.observers).forEach(key => {
         let observer = this.observers[key]
