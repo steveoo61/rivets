@@ -247,7 +247,7 @@ const binders = {
     bind: function(el) {
       if (!defined(this.marker)) {
         let attr = [this.view.prefix, this.type].join('-').replace('--', '-')
-        this.marker = document.createComment ` rivets: ${this.type} `
+        this.marker = document.createComment(` rivets: ${this.type} `)
         this.iterated = []
 
         el.removeAttribute(attr)
@@ -281,7 +281,7 @@ const binders = {
       }
 
       collection.forEach((model, index) => {
-        let data = {index: index}
+        let data = {index: index, $parent: this.model}
         data[modelName] = model
 
         if (!defined(this.iterated[index])) {
