@@ -16,7 +16,7 @@
     "url": "https://github.com/mikeric/rivets.git"
   },
   "scripts": {
-    "pretest": "webpack --config=webpack.spec.config.js",
+    "pretest": "webpack && webpack --config=webpack.spec.config.js",
     "test": "mocha-phantomjs spec/runner.html",
     "build": "webpack --x-minimize"
   },
