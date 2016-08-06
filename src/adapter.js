@@ -2,10 +2,6 @@
 // properties on plain objects, implemented in ES5 natives using
 // `Object.defineProperty`.
 
-const defined = (value) => {
-  return value !== undefined && value !== null
-}
-
 const ARRAY_METHODS = [
   'push',
   'pop',
@@ -58,7 +54,7 @@ const adapter = {
       Object.keys(map.pointers).forEach(r => {
         let k = map.pointers[r]
 
-        if (defined(weakmap[r])) {
+        if (weakmap[r]) {
           if (weakmap[r].callbacks[k] instanceof Array) {
             weakmap[r].callbacks[k].forEach(callback => {
               callback()
@@ -75,7 +71,7 @@ const adapter = {
     if (obj instanceof Array) {
       let map = this.weakReference(obj)
 
-      if (!defined(map.pointers)) {
+      if (!map.pointers) {
         map.pointers = {}
 
         ARRAY_METHODS.forEach(fn => {
@@ -83,7 +79,7 @@ const adapter = {
         })
       }
 
-      if (!defined(map.pointers[ref])) {
+      if (!map.pointers[ref]) {
         map.pointers[ref] = []
       }
 
@@ -94,7 +90,7 @@ const adapter = {
   },
 
   unobserveMutations: function(obj, ref, keypath) {
-    if ((obj instanceof Array) && defined(obj[this.id])) {
+    if ((obj instanceof Array) && (obj[this.id] != null)) {
       let map = this.weakmap[obj[this.id]]
 
       if (map) {
@@ -120,7 +116,7 @@ const adapter = {
   observe: function(obj, keypath, callback) {
     let callbacks = this.weakReference(obj).callbacks
 
-    if (!defined(callbacks[keypath])) {
+    if (!callbacks[keypath]) {
       callbacks[keypath] = []
       let desc = Object.getOwnPropertyDescriptor(obj, keypath)
 
@@ -141,10 +137,10 @@ const adapter = {
               let map = this.weakmap[obj[this.id]]
 
               if (map) {
-                let callbacks = map.callbacks
+                let callbacks = map.callbacks[keypath]
 
-                if (callbacks[keypath]) {
-                  callbacks[keypath].forEach(cb => {
+                if (callbacks) {
+                  callbacks.forEach(cb => {
                       cb()
                   })
                 }
