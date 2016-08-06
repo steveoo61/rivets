@@ -147,7 +147,7 @@ const binders = {
         let attr = [this.view.prefix, this.type].join('-').replace('--', '-')
         let declaration = el.getAttribute(attr)
 
-        this.marker = document.createComment ` rivets: ${this.type} ${declaration} `
+        this.marker = document.createComment(' rivets: ' + this.type + ' ' + declaration + ' ');
         this.bound = false
 
         el.removeAttribute(attr)
