@@ -1,9 +1,8 @@
 var webpack = require('webpack');
 //options
 var minimize = process.argv.indexOf('--x-minimize') !== -1;
-var standalone = process.argv.indexOf('--x-standalone') !== -1;
 
-var entryKeys = standalone ? ['rivets'] : ['rivets.bundled'];
+var entryKeys = ['rivets'];
 
 var entry = entryKeys.reduce(function (memo, key) {
   memo[key] = './src/export';
@@ -23,8 +22,6 @@ module.exports = {
     library: 'rivets',
     libraryTarget: 'umd'
   },
-
-  externals: standalone ? ['sightglass'] : undefined,
 
   module: {
     loaders: [

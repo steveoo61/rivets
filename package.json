@@ -18,7 +18,7 @@
   "scripts": {
     "pretest": "webpack --config=webpack.spec.config.js",
     "test": "mocha-phantomjs spec/runner.html",
-    "build": "webpack --x-minimize --x-standalone && webpack --x-minimize"
+    "build": "webpack --x-minimize"
   },
   "devDependencies": {
     "babel-core": "^4.7.16",
