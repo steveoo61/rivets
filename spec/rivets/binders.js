@@ -111,20 +111,45 @@ describe("Rivets.binders", function() {
       el = document.createElement("span");
       el.setAttribute("rv-each-item", "items");
       nestedEl = document.createElement("span");
-      nestedEl.setAttribute("rv-each-nested", "item.val");
-      nestedEl.textContent = "{%item%}-{%nested%}";
+      nestedEl.setAttribute("rv-each-nested", "item.items");
       el.appendChild(nestedEl);
       fragment.appendChild(el);
 
-      model = { items: [{val: [{val: 0},{val: 1}]},{val: [{val: 2},{val: 3}]},{val: [{val: 4},{val: 5}]}] };
+      model = {
+        root: 'Root Node',
+        items: [
+          {name: 'Level 1 - 0', items: [{val: 0}, {val: 1}]},
+          {name: 'Level 1 - 1', items: [{val: 2}, {val: 3}]},
+          {name: 'Level 1 - 2', items: [{val: 4}, {val: 5}]}
+        ]
+      };
     });
 
-    it.skip("lets you get all the indexes", function() {
+    it.skip("lets you access index from current and parent scope", function() {
+      nestedEl.textContent = '{%item%}-{%nested%}';
       var view = rivets.bind(el, model);
 
       Should(fragment.childNodes[1].childNodes[1].textContent).be.exactly('0-0');
       Should(fragment.childNodes[1].childNodes[2].textContent).be.exactly('0-1');
       Should(fragment.childNodes[2].childNodes[2].textContent).be.exactly('1-1');
+    });
+
+    it("lets you access properties from parent scopes", function() {
+      nestedEl.textContent = '{root}!{item.name}';
+      var view = rivets.bind(el, model);
+
+      Should(fragment.childNodes[1].childNodes[1].textContent).be.exactly('Root Node!Level 1 - 0');
+      Should(fragment.childNodes[1].childNodes[2].textContent).be.exactly('Root Node!Level 1 - 0');
+      Should(fragment.childNodes[2].childNodes[2].textContent).be.exactly('Root Node!Level 1 - 1');
+    });
+
+    it("reflects changes in parent scopes properties", function() {
+      nestedEl.textContent = '{root}!{item.name}';
+      var view = rivets.bind(el, model);
+      model.root = 'New';
+      Should(fragment.childNodes[1].childNodes[1].textContent).be.exactly('New!Level 1 - 0');
+      Should(fragment.childNodes[1].childNodes[2].textContent).be.exactly('New!Level 1 - 0');
+      Should(fragment.childNodes[2].childNodes[2].textContent).be.exactly('New!Level 1 - 1');
     });
   });
 
