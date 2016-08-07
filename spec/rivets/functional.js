@@ -232,28 +232,17 @@ describe('Functional', function() {
         el.getElementsByTagName('li')[3].textContent.should.equal('last')
       });
 
-      it.skip('should allow binding to the iterated element index', function() {
-        listItem.setAttribute('data-index', 'index');
+      it('should allow binding to the iterated element index', function() {
+        listItem.setAttribute('data-index', '$index');
         rivets.bind(el, bindData);
         el.getElementsByTagName('li')[0].getAttribute('index').should.equal('0');
         el.getElementsByTagName('li')[1].getAttribute('index').should.equal('1')
       });
 
-      it.skip('should allow binding to the iterated element index by using the %item% syntax', function() {
-        listItem.setAttribute('data-index', '%item%');
-        rivets.bind(el, bindData);
-        el.getElementsByTagName('li')[0].getAttribute('index').should.equal('0');
-        el.getElementsByTagName('li')[1].getAttribute('index').should.equal('1')
-      });
 
-      it.skip('should allow the developer to configure the index attribute available in the iteration', function() {
-        rivets.configure({
-          iterationAlias : function(modelName) {
-            return modelName + 'Index';
-          }
-        });
-
+      it('should allow the developer to configure the index attribute available in the iteration', function() {
         listItem.setAttribute('data-index', 'itemIndex');
+        listItem.setAttribute('index-property', 'itemIndex');
         rivets.bind(el, bindData);
         el.getElementsByTagName('li')[0].getAttribute('index').should.equal('0');
         el.getElementsByTagName('li')[1].getAttribute('index').should.equal('1')

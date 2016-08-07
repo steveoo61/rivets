@@ -143,7 +143,7 @@ const binders = {
     priority: 4000,
 
     bind: function(el) {
-      if (!defined(this.marker)) {
+      if (!this.marker) {
         let attr = [this.view.prefix, this.type].join('-').replace('--', '-')
         let declaration = el.getAttribute(attr)
 
@@ -157,7 +157,7 @@ const binders = {
     },
 
     unbind: function() {
-      if (defined(this.nested)) {
+      if (this.nested) {
         this.nested.unbind()
         this.bound = false
       }
@@ -166,16 +166,11 @@ const binders = {
     routine: function(el, value) {
       if (!!value === !this.bound) {
         if (value) {
-          let models = {}
 
-          Object.keys(this.view.models).forEach(key => {
-            models[key] = this.view.models[key]
-          })
-
-          if (defined(this.nested)) {
+          if (this.nested) {
             this.nested.bind()
           } else {
-            this.nested = rivets.bind(el, models, this.view.options())
+            this.nested = rivets.bind(el, this.view.models, this.view.options())
           }
 
           this.marker.parentNode.insertBefore(el, this.marker.nextSibling)
@@ -189,7 +184,7 @@ const binders = {
     },
 
     update: function(models) {
-      if (defined(this.nested)) {
+      if (this.nested) {
         this.nested.update(models)
       }
     }
@@ -224,13 +219,13 @@ const binders = {
     priority: 1000,
 
     unbind: function(el) {
-      if (defined(this.handler)) {
+      if (this.handler) {
         unbindEvent(el, this.args[0], this.handler)
       }
     },
 
     routine: function(el, value) {
-      if (defined(this.handler)) {
+      if (this.handler) {
         unbindEvent(el, this.args[0], this.handler)
       }
 
@@ -245,7 +240,7 @@ const binders = {
     priority: 4000,
 
     bind: function(el) {
-      if (!defined(this.marker)) {
+      if (!this.marker) {
         let attr = [this.view.prefix, this.type].join('-').replace('--', '-')
         this.marker = document.createComment(` rivets: ${this.type} `)
         this.iterated = []
@@ -261,7 +256,7 @@ const binders = {
     },
 
     unbind: function(el) {
-      if (defined(this.iterated)) {
+      if (this.iterated) {
         this.iterated.forEach(view => {
           view.unbind()
         })
@@ -271,6 +266,7 @@ const binders = {
     routine: function(el, collection) {
       let modelName = this.args[0]
       let collection = collection || []
+      let indexProp = el.getAttribute('index-property') || '$index'
 
       if (this.iterated.length > collection.length) {
         times(this.iterated.length - collection.length, () => {
@@ -281,15 +277,11 @@ const binders = {
       }
 
       collection.forEach((model, index) => {
-        let data = {index: index, $parent: this.model}
+        let data = {$parent: this.view.models}
+        data[indexProp] = index
         data[modelName] = model
 
-        if (!defined(this.iterated[index])) {
-          Object.keys(this.view.models).forEach(key => {
-            if (!defined(data[key])) {
-              data[key] = this.view.models[key]
-            }
-          })
+        if (!this.iterated[index]) {
 
           let previous = this.marker
 
@@ -320,6 +312,8 @@ const binders = {
 
     update: function(models) {
       let data = {}
+
+      //todo: add test and fix if necessary
 
       Object.keys(models).forEach(key => {
         if (key !== this.args[0]) {

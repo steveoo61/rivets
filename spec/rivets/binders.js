@@ -125,8 +125,8 @@ describe("Rivets.binders", function() {
       };
     });
 
-    it.skip("lets you access index from current and parent scope", function() {
-      nestedEl.textContent = '{%item%}-{%nested%}';
+    it("lets you access index from current and parent scope", function() {
+      nestedEl.textContent = '{$parent.$index}-{$index}';
       var view = rivets.bind(el, model);
 
       Should(fragment.childNodes[1].childNodes[1].textContent).be.exactly('0-0');
@@ -151,6 +151,16 @@ describe("Rivets.binders", function() {
       Should(fragment.childNodes[1].childNodes[2].textContent).be.exactly('New!Level 1 - 0');
       Should(fragment.childNodes[2].childNodes[2].textContent).be.exactly('New!Level 1 - 1');
     });
+
+    it("reflects changes when an undefined property is set in root scope", function() {
+      nestedEl.textContent = '{unset}';
+      var view = rivets.bind(el, model);
+      model.unset = 'NotUndefined';
+      Should(fragment.childNodes[1].childNodes[1].textContent).be.exactly('NotUndefined');
+      Should(fragment.childNodes[1].childNodes[2].textContent).be.exactly('NotUndefined');
+      Should(fragment.childNodes[2].childNodes[2].textContent).be.exactly('NotUndefined');
+    });
+
   });
 
   describe("if", function() {
