@@ -80,7 +80,9 @@ describe('Rivets.Binding', function() {
     });
 
     it("calls the binder's bind method if one exists", function() {
-      binding.bind.should.not.throw();
+      (function(){
+        binding.bind()
+      }).should.not.throw();
 
       binding.binder.bind = function(){};
       sinon.spy(binding.binder, 'bind');
@@ -116,7 +118,9 @@ describe('Rivets.Binding', function() {
   describe('unbind()', function() {
     describe('without a binder.unbind defined', function() {
       it('should not throw an error', function() {
-        binding.unbind.should.not.throw()
+        (function(){
+          binding.unbind()
+        }).should.not.throw();
       })
     });
 
@@ -126,7 +130,9 @@ describe('Rivets.Binding', function() {
       });
 
       it('should not throw an error', function() {
-        binding.unbind.should.not.throw()
+        (function(){
+          binding.unbind()
+        }).should.not.throw();
       });
 
       it("calls the binder's unbind method", function() {
