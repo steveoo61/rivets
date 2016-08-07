@@ -442,9 +442,4 @@ export class TextBinding extends Binding {
 
     this.sync = this.sync.bind(this)
   }
-
-  // Wrap the call to `sync` to avoid function context issues.
-  sync() {
-    super.sync()
-  }
 }
