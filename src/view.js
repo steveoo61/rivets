@@ -132,9 +132,11 @@ export default class View {
   traverse(node) {
     let bindingRegExp = this.bindingRegExp()
     let block = node.nodeName === 'SCRIPT' || node.nodeName === 'STYLE'
-    let attributes = null
+    let nodeAttributes = node.attributes
+    let attributes        
 
-    Array.prototype.slice.call(node.attributes).forEach(attribute => {
+    for (let i = 0, len = nodeAttributes.length; i < len; i++) {
+      let attribute = nodeAttributes[i]    
       if (bindingRegExp.test(attribute.name)) {
         let type = attribute.name.replace(bindingRegExp, '')
         let binder = this.binders[type]
@@ -162,16 +164,17 @@ export default class View {
           attributes = [attribute]
         }
       }
-    })
+    }
 
-    attributes = attributes || Array.prototype.slice.call(node.attributes)
+    attributes = attributes || nodeAttributes
 
-    attributes.forEach(attribute => {
+    for (let i = 0, len = attributes.length; i < len; i++) {
+      let attribute = attributes[i]
       if (bindingRegExp.test(attribute.name)) {
         let type = attribute.name.replace(bindingRegExp, '')
         this.buildBinding(Binding, node, type, attribute.value)
       }
-    })
+    }
 
     if (!block) {
       let type = node.nodeName.toLowerCase()
