@@ -590,7 +590,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	          }
 	        };
 
-	        this.els.forEach(parse);
+	        var elements = this.els,
+	            i = undefined,
+	            len = undefined;
+	        for (i = 0, len = elements.length; i < len; i++) {
+	          parse(elements[i]);
+	        }
 
 	        this.bindings.sort(function (a, b) {
 	          var aPriority = defined(a.binder) ? a.binder.priority || 0 : 0;
@@ -605,9 +610,11 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	        var bindingRegExp = this.bindingRegExp();
 	        var block = node.nodeName === "SCRIPT" || node.nodeName === "STYLE";
-	        var attributes = null;
+	        var nodeAttributes = node.attributes;
+	        var attributes = undefined;
 
-	        Array.prototype.slice.call(node.attributes).forEach(function (attribute) {
+	        for (var i = 0, len = nodeAttributes.length; i < len; i++) {
+	          var attribute = nodeAttributes[i];
 	          if (bindingRegExp.test(attribute.name)) {
 	            (function () {
 	              var type = attribute.name.replace(bindingRegExp, "");
@@ -637,16 +644,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	              }
 	            })();
 	          }
-	        });
+	        }
 
-	        attributes = attributes || Array.prototype.slice.call(node.attributes);
+	        attributes = attributes || nodeAttributes;
 
-	        attributes.forEach(function (attribute) {
+	        for (var i = 0, len = attributes.length; i < len; i++) {
+	          var attribute = attributes[i];
 	          if (bindingRegExp.test(attribute.name)) {
 	            var type = attribute.name.replace(bindingRegExp, "");
-	            _this.buildBinding(Binding, node, type, attribute.value);
+	            this.buildBinding(Binding, node, type, attribute.value);
 	          }
-	        });
+	        }
 
 	        if (!block) {
 	          var type = node.nodeName.toLowerCase();
