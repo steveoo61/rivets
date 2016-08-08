@@ -25,15 +25,8 @@ export class Binding {
     this.formatterObservers = {}
     this.model = undefined
     this.setBinder()
-    
-    //todo: investigate how to avoid binding those methods always
-    //currently is needed to ensure this scope in events and to delete callback in adapter
-    //one possibility is to create the bound function by demand
-    //another one is to use closures
-    this.bind = this.bind.bind(this)
-    this.unbind = this.unbind.bind(this)
+
     this.sync = this.sync.bind(this)
-    this.publish = this.publish.bind(this)
   }
 
   // Sets the binder to use when binding and syncing.

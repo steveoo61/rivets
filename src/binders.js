@@ -53,11 +53,17 @@ const binders = {
     priority: 2000,
 
     bind: function(el) {
-      bindEvent(el, CHANGE_EVENT, this.publish)
+      var self = this;
+      if (!this.callback) {
+        this.callback = function () {
+          self.publish();
+        }
+      }
+      bindEvent(el, CHANGE_EVENT, this.callback)
     },
 
     unbind: function(el) {
-      unbindEvent(el, CHANGE_EVENT, this.publish)
+      unbindEvent(el, CHANGE_EVENT, this.callback)
     },
 
     routine: function(el, value) {
@@ -77,11 +83,17 @@ const binders = {
     priority: 2000,
 
     bind: function(el) {
-      bindEvent(el, CHANGE_EVENT, this.publish)
+      var self = this;
+      if (!this.callback) {
+        this.callback = function () {
+          self.publish();
+        }
+      }
+      bindEvent(el, CHANGE_EVENT, this.callback)
     },
 
     unbind: function(el) {
-      unbindEvent(el, CHANGE_EVENT, this.publish)
+      unbindEvent(el, CHANGE_EVENT, this.callback)
     },
 
     routine: function(el, value) {
@@ -103,13 +115,20 @@ const binders = {
       if (!(el.tagName === 'INPUT' && el.type === 'radio')) {
         this.event = el.tagName === 'SELECT' ? 'change' : 'input'
 
-        bindEvent(el, this.event, this.publish)
+        var self = this;
+        if (!this.callback) {
+          this.callback = function () {
+            self.publish();
+          }
+        }
+
+        bindEvent(el, this.event, this.callback)
       }
     },
 
     unbind: function(el) {
       if (!(el.tagName === 'INPUT' && el.type === 'radio')) {
-        unbindEvent(el, this.event, this.publish)
+        unbindEvent(el, this.event, this.callback)
       }
     },
 
