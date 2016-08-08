@@ -127,12 +127,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	  function Observer(obj, keypath, callback, options) {
 	    this.options = options || {};
 	    this.options.adapters = this.options.adapters || {};
-	    this.obj = obj;
 	    this.keypath = keypath;
 	    this.callback = callback;
 	    this.objectPath = [];
 	    this.update = this.update.bind(this);
 	    this.parse();
+	    this.obj = this.getRootObject(obj);
 
 	    if (isObject(this.target = this.realize())) {
 	      this.set(true, this.key, this.target, this.callback);
@@ -305,6 +305,27 @@ return /******/ (function(modules) { // webpackBootstrap
 	    if (isObject(this.target)) {
 	      this.set(false, this.key, this.target, this.callback);
 	    }
+	  };
+	  // traverse the scope chain to find the scope which has the root property
+	  // if the property is not found in chain, returns the root scope
+	  Observer.prototype.getRootObject = function (obj) {
+	    var rootProp, current;
+	    if (!obj.$parent) {
+	      return obj;
+	    }
+
+	    if (this.tokens.length) {
+	      rootProp = this.tokens[0].path;
+	    } else {
+	      rootProp = this.key.path;
+	    }
+
+	    current = obj;
+	    while (current.$parent && current[rootProp] === undefined) {
+	      current = current.$parent;
+	    }
+
+	    return current;
 	  };
 
 	  // Check if a value is an object than can be observed.
@@ -730,8 +751,6 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var _toConsumableArray = function (arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) arr2[i] = arr[i]; return arr2; } else { return Array.from(arr); } };
 
-	var _get = function get(object, property, receiver) { var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc && desc.writable) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
-
 	var _inherits = function (subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) subClass.__proto__ = superClass; };
 
 	var _createClass = (function () { function defineProperties(target, props) { for (var key in props) { var prop = props[key]; prop.configurable = true; if (prop.value) prop.writable = true; } Object.defineProperties(target, props); } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
@@ -783,6 +802,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	    this.model = undefined;
 	    this.setBinder();
 
+	    //todo: investigate how to avoid binding those methods always
+	    //currently is needed to ensure this scope in events and to delete callback in adapter
+	    //one possibility is to create the bound function by demand
+	    //another one is to use closures
 	    this.bind = this.bind.bind(this);
 	    this.unbind = this.unbind.bind(this);
 	    this.sync = this.sync.bind(this);
@@ -1300,17 +1323,6 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	  _inherits(TextBinding, _Binding2);
 
-	  _createClass(TextBinding, {
-	    sync: {
-
-	      // Wrap the call to `sync` to avoid function context issues.
-
-	      value: function sync() {
-	        _get(Object.getPrototypeOf(TextBinding.prototype), "sync", this).call(this);
-	      }
-	    }
-	  });
-
 	  return TextBinding;
 	})(Binding);
 
@@ -1694,8 +1706,6 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["default"] : obj; };
 
-	var _taggedTemplateLiteral = function (strings, raw) { return Object.freeze(Object.defineProperties(strings, { raw: { value: Object.freeze(raw) } })); };
-
 	var rivets = _interopRequire(__webpack_require__(2));
 
 	var _util = __webpack_require__(7);
@@ -1847,11 +1857,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	    priority: 4000,
 
 	    bind: function bind(el) {
-	      if (!defined(this.marker)) {
+	      if (!this.marker) {
 	        var attr = [this.view.prefix, this.type].join("-").replace("--", "-");
 	        var declaration = el.getAttribute(attr);
 
-	        this.marker = document.createComment(_taggedTemplateLiteral([" rivets: ", " ", " "], [" rivets: ", " ", " "]), this.type, declaration);
+	        this.marker = document.createComment(" rivets: " + this.type + " " + declaration + " ");
 	        this.bound = false;
 
 	        el.removeAttribute(attr);
@@ -1861,33 +1871,24 @@ return /******/ (function(modules) { // webpackBootstrap
 	    },
 
 	    unbind: function unbind() {
-	      if (defined(this.nested)) {
+	      if (this.nested) {
 	        this.nested.unbind();
 	        this.bound = false;
 	      }
 	    },
 
 	    routine: function routine(el, value) {
-	      var _this = this;
-
 	      if (!!value === !this.bound) {
 	        if (value) {
-	          (function () {
-	            var models = {};
 
-	            Object.keys(_this.view.models).forEach(function (key) {
-	              models[key] = _this.view.models[key];
-	            });
+	          if (this.nested) {
+	            this.nested.bind();
+	          } else {
+	            this.nested = rivets.bind(el, this.view.models, this.view.options());
+	          }
 
-	            if (defined(_this.nested)) {
-	              _this.nested.bind();
-	            } else {
-	              _this.nested = rivets.bind(el, models, _this.view.options());
-	            }
-
-	            _this.marker.parentNode.insertBefore(el, _this.marker.nextSibling);
-	            _this.bound = true;
-	          })();
+	          this.marker.parentNode.insertBefore(el, this.marker.nextSibling);
+	          this.bound = true;
 	        } else {
 	          el.parentNode.removeChild(el);
 	          this.nested.unbind();
@@ -1897,7 +1898,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    },
 
 	    update: function update(models) {
-	      if (defined(this.nested)) {
+	      if (this.nested) {
 	        this.nested.update(models);
 	      }
 	    }
@@ -1932,13 +1933,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	    priority: 1000,
 
 	    unbind: function unbind(el) {
-	      if (defined(this.handler)) {
+	      if (this.handler) {
 	        unbindEvent(el, this.args[0], this.handler);
 	      }
 	    },
 
 	    routine: function routine(el, value) {
-	      if (defined(this.handler)) {
+	      if (this.handler) {
 	        unbindEvent(el, this.args[0], this.handler);
 	      }
 
@@ -1953,7 +1954,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    priority: 4000,
 
 	    bind: function bind(el) {
-	      if (!defined(this.marker)) {
+	      if (!this.marker) {
 	        var attr = [this.view.prefix, this.type].join("-").replace("--", "-");
 	        this.marker = document.createComment(" rivets: " + this.type + " ");
 	        this.iterated = [];
@@ -1969,7 +1970,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    },
 
 	    unbind: function unbind(el) {
-	      if (defined(this.iterated)) {
+	      if (this.iterated) {
 	        this.iterated.forEach(function (view) {
 	          view.unbind();
 	        });
@@ -1981,6 +1982,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	      var modelName = this.args[0];
 	      var collection = collection || [];
+	      var indexProp = el.getAttribute("index-property") || "$index";
 
 	      if (this.iterated.length > collection.length) {
 	        times(this.iterated.length - collection.length, function () {
@@ -1991,15 +1993,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	      }
 
 	      collection.forEach(function (model, index) {
-	        var data = { index: index, $parent: _this.model };
+	        var data = { $parent: _this.view.models };
+	        data[indexProp] = index;
 	        data[modelName] = model;
 
-	        if (!defined(_this.iterated[index])) {
-	          Object.keys(_this.view.models).forEach(function (key) {
-	            if (!defined(data[key])) {
-	              data[key] = _this.view.models[key];
-	            }
-	          });
+	        if (!_this.iterated[index]) {
 
 	          var previous = _this.marker;
 
@@ -2032,6 +2030,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	      var _this = this;
 
 	      var data = {};
+
+	      //todo: add test and fix if necessary
 
 	      Object.keys(models).forEach(function (key) {
 	        if (key !== _this.args[0]) {
