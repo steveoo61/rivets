@@ -112,7 +112,8 @@ const binders = {
     priority: 3000,
 
     bind: function(el) {
-      if (!(el.tagName === 'INPUT' && el.type === 'radio')) {
+      this.isRadio = el.tagName === 'INPUT' && el.type === 'radio';
+      if (!this.isRadio) {
         this.event = el.tagName === 'SELECT' ? 'change' : 'input'
 
         var self = this;
@@ -127,20 +128,14 @@ const binders = {
     },
 
     unbind: function(el) {
-      if (!(el.tagName === 'INPUT' && el.type === 'radio')) {
+      if (!this.isRadio) {
         unbindEvent(el, this.event, this.callback)
       }
     },
 
     routine: function(el, value) {
-      if (el.tagName === 'INPUT' && el.type === 'radio') {
+      if (this.isRadio) {
         el.setAttribute('value', value)
-      } else if (window.jQuery) {
-        el = jQuery(el)
-
-        if (getString(value) !== getString(el.val())) {
-          el.val(defined(value) ? value : '')
-        }
       } else {
         if (el.type === 'select-multiple') {
           if (value instanceof Array) {
