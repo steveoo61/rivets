@@ -133,13 +133,13 @@ export default class View {
     let bindingRegExp = this.bindingRegExp()
     let block = node.nodeName === 'SCRIPT' || node.nodeName === 'STYLE'
     let nodeAttributes = node.attributes
-    let attributes        
+    let attributes, type, binder
 
     for (let i = 0, len = nodeAttributes.length; i < len; i++) {
       let attribute = nodeAttributes[i]    
       if (bindingRegExp.test(attribute.name)) {
-        let type = attribute.name.replace(bindingRegExp, '')
-        let binder = this.binders[type]
+        type = attribute.name.replace(bindingRegExp, '')
+        binder = this.binders[type]
 
         if (!binder) {
           Object.keys(this.binders).forEach(identifier => {

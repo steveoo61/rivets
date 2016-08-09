@@ -175,8 +175,9 @@ export class Binding {
 
   // Publishes the value currently set on the input element back to the model.
   publish() {
+    let value;
     if (this.observer) {
-      let value = this.getValue(this.el)
+      value = this.getValue(this.el)
 
       this.formatters.slice(0).reverse().forEach(formatter => {
         let args = formatter.split(/\s+/)
