@@ -1,3 +1,13 @@
+This branch is used to keep the changes necessary to fit my needs:
+
+* Change how scope of iteration binder works. Instead of copying properties down to children, uses a prototype like approach
+ * Related: [486](https://github.com/mikeric/rivets/issues/486) [512](https://github.com/mikeric/rivets/issues/512) [417](https://github.com/mikeric/rivets/pull/417)
+* Change how to customize index name in each binder (using an attribute)
+ * Related: [551](https://github.com/mikeric/rivets/issues/551) [552](https://github.com/mikeric/rivets/pull/552) 
+* Add ability to customize input event 
+* Do not bind publish, bind and unbind methods in binding instances
+
+
 # Rivets.js
 
 Rivets.js is a lightweight data binding and templating system that facilitates building data-driven views. It is agnostic about every aspect of a front-end MV(C|VM|P) stack, making it easy to introduce it into your current workflow or to use it as part of your own custom front-end stack comprised of other libraries.
