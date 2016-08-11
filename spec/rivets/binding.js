@@ -269,7 +269,7 @@ describe('Rivets.Binding', function() {
           return value + ':' + arg1 + ':' + arg2
         },
         read: function(value, arg1, arg2) {
-          return value + '-' + arg1 + '-' + arg2
+          return value.replace(':' + arg1 + ':' + arg2, '')
         }
       }
 
@@ -293,9 +293,63 @@ describe('Rivets.Binding', function() {
       binding.publish({target: valueInput})
       adapter.set.calledWith(model, 'name', 'bobby:50:male').should.be.true
 
-      binding.set('andy')
-      binding.binder.routine.calledWith(valueInput, 'andy-50-male').should.be.true
+      valueInput.value.should.equal('bobby')
+
+      binding.set('andy:50:male')
+      binding.binder.routine.calledWith(valueInput, 'andy').should.be.true
     })
+
+    it("should resolve formatter arguments correctly with multiple formatters", function() {
+      rivets.formatters.wrap = {
+        publish: function(value, arg1, arg2) {
+          return arg1 + value + arg2
+        },
+        read: function(value, arg1, arg2) {
+          return value.replace(arg1, '').replace(arg2, '')
+        }
+      }
+
+      rivets.formatters.saveAsCase = {
+        publish: function(value, typeCase) {
+          return value['to' + typeCase + 'Case']()
+        },
+        read: function(value, typeCase) {
+          return value[typeCase === 'Upper' ? 'toLowerCase' : 'toUpperCase']()
+        }
+      }
+
+      valueInput = document.createElement('input')
+      valueInput.setAttribute('type', 'text')
+      valueInput.setAttribute(
+        'data-value',
+        "obj.name | saveAsCase config.typeCase | wrap config.curly '}' | wrap config.square ']' | wrap config.paren ')'"
+      )
+
+      view = rivets.bind(valueInput, {
+        obj: {
+          name: 'nothing'
+        },
+        config: {
+          paren: '(',
+          square: '[',
+          curly: '{',
+          typeCase: 'Upper'
+        }
+      })
+
+      binding = view.bindings[0]
+      model = binding.model
+
+      valueInput.value = 'bobby'
+      binding.publish({target: valueInput})
+      adapter.set.calledWith(model, 'name', '{[(BOBBY)]}').should.be.true
+
+      valueInput.value.should.equal('bobby')
+
+      binding.set('{[(ANDY)]}')
+      binding.binder.routine.calledWith(valueInput, 'andy').should.be.true
+    })
+
 
     it("should not fail or format if the specified binding function doesn't exist", function() {
       rivets.formatters.awesome = { };

@@ -81,6 +81,29 @@ export class Binding {
     }
   }
 
+  parseFormatterArguments(args, formatterIndex) {
+    return args
+      .map(parseType)
+      .map(({type, value}, ai) => {
+        if (type === 0) {
+          return value
+        } else {
+          if (!defined(this.formatterObservers[formatterIndex])) {
+            this.formatterObservers[formatterIndex] = {}
+          }
+
+          let observer = this.formatterObservers[formatterIndex][ai]
+
+          if (!observer) {
+            observer = this.observe(this.view.models, value, this.sync)
+            this.formatterObservers[formatterIndex][ai] = observer
+          }
+
+          return observer.value()
+        }
+      })
+  }
+
   // Applies all the current formatters to the supplied value and returns the
   // formatted value.
   formattedValue(value) {
@@ -88,29 +111,8 @@ export class Binding {
       let args = formatterStr.match(/[^\s']+|'([^']|'[^\s])*'|"([^"]|"[^\s])*"/g)
       let id = args.shift()
       let formatter = this.view.formatters[id]
-      let processedArgs = []
 
-      args = args.map(parseType)
-
-      args.forEach((arg, ai) => {
-        if (arg.type === 0) {
-          processedArgs.push(arg.value)
-        } else {
-          if (!defined(this.formatterObservers[fi])) {
-            this.formatterObservers[fi] = {}
-          }
-
-          let observer = this.formatterObservers[fi][ai]
-
-          if (!observer) {
-            observer = this.observe(this.view.models, arg.value, this.sync)
-            this.formatterObservers[fi][ai] = observer
-          }
-
-          processedArgs.push(observer.value())
-        }
-      })
-
+      const processedArgs = this.parseFormatterArguments(args, fi)
 
       if (formatter && (formatter.read instanceof Function)) {
         value = formatter.read(value, ...processedArgs)
@@ -178,14 +180,17 @@ export class Binding {
     let value;
     if (this.observer) {
       value = this.getValue(this.el)
+      const lastformatterIndex = this.formatters.length - 1
 
-      this.formatters.slice(0).reverse().forEach(formatter => {
-        let args = formatter.split(/\s+/)
-        let id = args.shift()
-        let f = this.view.formatters[id]
+      this.formatters.slice(0).reverse().forEach((formatter, fiReversed) => {
+        const fi = lastformatterIndex - fiReversed
+        const args = formatter.split(/\s+/)
+        const id = args.shift()
+        const f = this.view.formatters[id]
+        const processedArgs = this.parseFormatterArguments(args, fi)
 
         if (defined(f) && f.publish) {
-          value = f.publish(value, ...args)
+          value = f.publish(value, ...processedArgs)
         }
       })
 
