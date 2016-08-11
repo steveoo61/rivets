@@ -114,7 +114,7 @@ const binders = {
     bind: function(el) {
       this.isRadio = el.tagName === 'INPUT' && el.type === 'radio';
       if (!this.isRadio) {
-        this.event = el.tagName === 'SELECT' ? 'change' : 'input'
+        this.event = el.getAttribute('event-name') || (el.tagName === 'SELECT' ? 'change' : 'input')
 
         var self = this;
         if (!this.callback) {
