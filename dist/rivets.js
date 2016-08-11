@@ -611,38 +611,38 @@ return /******/ (function(modules) { // webpackBootstrap
 	        var bindingRegExp = this.bindingRegExp();
 	        var block = node.nodeName === "SCRIPT" || node.nodeName === "STYLE";
 	        var nodeAttributes = node.attributes;
-	        var attributes = undefined;
+	        var attributes = undefined,
+	            type = undefined,
+	            binder = undefined;
 
 	        for (var i = 0, len = nodeAttributes.length; i < len; i++) {
 	          var attribute = nodeAttributes[i];
 	          if (bindingRegExp.test(attribute.name)) {
-	            (function () {
-	              var type = attribute.name.replace(bindingRegExp, "");
-	              var binder = _this.binders[type];
+	            type = attribute.name.replace(bindingRegExp, "");
+	            binder = this.binders[type];
 
-	              if (!binder) {
-	                Object.keys(_this.binders).forEach(function (identifier) {
-	                  var value = _this.binders[identifier];
+	            if (!binder) {
+	              Object.keys(this.binders).forEach(function (identifier) {
+	                var value = _this.binders[identifier];
 
-	                  if (identifier !== "*" && identifier.indexOf("*") > -1) {
-	                    var regexp = new RegExp("^" + identifier.replace(/\*/g, ".+") + "$");
+	                if (identifier !== "*" && identifier.indexOf("*") > -1) {
+	                  var regexp = new RegExp("^" + identifier.replace(/\*/g, ".+") + "$");
 
-	                    if (regexp.test(type)) {
-	                      binder = value;
-	                    }
+	                  if (regexp.test(type)) {
+	                    binder = value;
 	                  }
-	                });
-	              }
+	                }
+	              });
+	            }
 
-	              if (!defined(binder)) {
-	                binder = _this.binders["*"];
-	              }
+	            if (!defined(binder)) {
+	              binder = this.binders["*"];
+	            }
 
-	              if (binder.block) {
-	                block = true;
-	                attributes = [attribute];
-	              }
-	            })();
+	            if (binder.block) {
+	              block = true;
+	              attributes = [attribute];
+	            }
 	          }
 	        }
 
@@ -651,16 +651,16 @@ return /******/ (function(modules) { // webpackBootstrap
 	        for (var i = 0, len = attributes.length; i < len; i++) {
 	          var attribute = attributes[i];
 	          if (bindingRegExp.test(attribute.name)) {
-	            var type = attribute.name.replace(bindingRegExp, "");
-	            this.buildBinding(Binding, node, type, attribute.value);
+	            var _type = attribute.name.replace(bindingRegExp, "");
+	            this.buildBinding(Binding, node, _type, attribute.value);
 	          }
 	        }
 
 	        if (!block) {
-	          var type = node.nodeName.toLowerCase();
+	          var _type2 = node.nodeName.toLowerCase();
 
-	          if (this.components[type] && !node._bound) {
-	            this.bindings.push(new ComponentBinding(this, node, type));
+	          if (this.components[_type2] && !node._bound) {
+	            this.bindings.push(new ComponentBinding(this, node, _type2));
 	            block = true;
 	          }
 	        }
@@ -810,14 +810,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    this.model = undefined;
 	    this.setBinder();
 
-	    //todo: investigate how to avoid binding those methods always
-	    //currently is needed to ensure this scope in events and to delete callback in adapter
-	    //one possibility is to create the bound function by demand
-	    //another one is to use closures
-	    this.bind = this.bind.bind(this);
-	    this.unbind = this.unbind.bind(this);
 	    this.sync = this.sync.bind(this);
-	    this.publish = this.publish.bind(this);
 	  }
 
 	  _createClass(Binding, {
@@ -882,6 +875,33 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }
 	      }
 	    },
+	    parseFormatterArguments: {
+	      value: function parseFormatterArguments(args, formatterIndex) {
+	        var _this = this;
+
+	        return args.map(parseType).map(function (_ref, ai) {
+	          var type = _ref.type;
+	          var value = _ref.value;
+
+	          if (type === 0) {
+	            return value;
+	          } else {
+	            if (!defined(_this.formatterObservers[formatterIndex])) {
+	              _this.formatterObservers[formatterIndex] = {};
+	            }
+
+	            var observer = _this.formatterObservers[formatterIndex][ai];
+
+	            if (!observer) {
+	              observer = _this.observe(_this.view.models, value, _this.sync);
+	              _this.formatterObservers[formatterIndex][ai] = observer;
+	            }
+
+	            return observer.value();
+	          }
+	        });
+	      }
+	    },
 	    formattedValue: {
 
 	      // Applies all the current formatters to the supplied value and returns the
@@ -894,33 +914,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	          var args = formatterStr.match(/[^\s']+|'([^']|'[^\s])*'|"([^"]|"[^\s])*"/g);
 	          var id = args.shift();
 	          var formatter = _this.view.formatters[id];
-	          var processedArgs = [];
 
-	          args = args.map(parseType);
-
-	          args.forEach(function (arg, ai) {
-	            if (arg.type === 0) {
-	              processedArgs.push(arg.value);
-	            } else {
-	              if (!defined(_this.formatterObservers[fi])) {
-	                _this.formatterObservers[fi] = {};
-	              }
-
-	              var observer = _this.formatterObservers[fi][ai];
-
-	              if (!observer) {
-	                observer = _this.observe(_this.view.models, arg.value, _this.sync);
-	                _this.formatterObservers[fi][ai] = observer;
-	              }
-
-	              processedArgs.push(observer.value());
-	            }
-	          });
+	          var processedArgs = _this.parseFormatterArguments(args, fi);
 
 	          if (formatter && formatter.read instanceof Function) {
-	            value = formatter.read.apply(formatter, [value].concat(processedArgs));
+	            value = formatter.read.apply(formatter, [value].concat(_toConsumableArray(processedArgs)));
 	          } else if (formatter instanceof Function) {
-	            value = formatter.apply(undefined, [value].concat(processedArgs));
+	            value = formatter.apply(undefined, [value].concat(_toConsumableArray(processedArgs)));
 	          }
 	        });
 
@@ -996,17 +996,21 @@ return /******/ (function(modules) { // webpackBootstrap
 	      value: function publish() {
 	        var _this = this;
 
+	        var value = undefined;
 	        if (this.observer) {
 	          (function () {
-	            var value = _this.getValue(_this.el);
+	            value = _this.getValue(_this.el);
+	            var lastformatterIndex = _this.formatters.length - 1;
 
-	            _this.formatters.slice(0).reverse().forEach(function (formatter) {
+	            _this.formatters.slice(0).reverse().forEach(function (formatter, fiReversed) {
+	              var fi = lastformatterIndex - fiReversed;
 	              var args = formatter.split(/\s+/);
 	              var id = args.shift();
 	              var f = _this.view.formatters[id];
+	              var processedArgs = _this.parseFormatterArguments(args, fi);
 
 	              if (defined(f) && f.publish) {
-	                value = f.publish.apply(f, [value].concat(_toConsumableArray(args)));
+	                value = f.publish.apply(f, [value].concat(_toConsumableArray(processedArgs)));
 	              }
 	            });
 
@@ -1448,57 +1452,30 @@ return /******/ (function(modules) { // webpackBootstrap
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
-	var $ = window.jQuery || window.$;
 
 	function bindEvent(el, event, handler) {
-	  if ($) {
-	    $(el).on(event, handler);
-	  } else {
-	    el.addEventListener(event, handler, false);
-	  }
+	  el.addEventListener(event, handler, false);
 	}
 
 	function unbindEvent(el, event, handler) {
-	  if ($) {
-	    $(el).off(event, handler);
-	  } else {
-	    el.removeEventListener(event, handler, false);
-	  }
+	  el.removeEventListener(event, handler, false);
 	}
 
 	function getInputValue(el) {
-	  if ($) {
-	    var $el = $(el);
+	  var results = [];
+	  if (el.type === "checkbox") {
+	    return el.checked;
+	  } else if (el.type === "select-multiple") {
 
-	    if ($el.attr("type") === "checkbox") {
-	      return $el.is(":checked");
-	    } else {
-	      return $el.val();
-	    }
-	  } else {
-	    if (el.type === "checkbox") {
-	      return el.checked;
-	    } else if (el.type === "select-multiple") {
-	      var _ret = (function () {
-	        var results = [];
-
-	        el.options.forEach(function (option) {
-	          if (option.selected) {
-	            results.push(option.value);
-	          }
-	        });
-
-	        return {
-	          v: results
-	        };
-	      })();
-
-	      if (typeof _ret === "object") {
-	        return _ret.v;
+	    el.options.forEach(function (option) {
+	      if (option.selected) {
+	        results.push(option.value);
 	      }
-	    } else {
-	      return el.value;
-	    }
+	    });
+
+	    return results;
+	  } else {
+	    return el.value;
 	  }
 	}
 
@@ -1775,11 +1752,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	    priority: 2000,
 
 	    bind: function bind(el) {
-	      bindEvent(el, CHANGE_EVENT, this.publish);
+	      var self = this;
+	      if (!this.callback) {
+	        this.callback = function () {
+	          self.publish();
+	        };
+	      }
+	      bindEvent(el, CHANGE_EVENT, this.callback);
 	    },
 
 	    unbind: function unbind(el) {
-	      unbindEvent(el, CHANGE_EVENT, this.publish);
+	      unbindEvent(el, CHANGE_EVENT, this.callback);
 	    },
 
 	    routine: function routine(el, value) {
@@ -1799,11 +1782,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	    priority: 2000,
 
 	    bind: function bind(el) {
-	      bindEvent(el, CHANGE_EVENT, this.publish);
+	      var self = this;
+	      if (!this.callback) {
+	        this.callback = function () {
+	          self.publish();
+	        };
+	      }
+	      bindEvent(el, CHANGE_EVENT, this.callback);
 	    },
 
 	    unbind: function unbind(el) {
-	      unbindEvent(el, CHANGE_EVENT, this.publish);
+	      unbindEvent(el, CHANGE_EVENT, this.callback);
 	    },
 
 	    routine: function routine(el, value) {
@@ -1822,28 +1811,30 @@ return /******/ (function(modules) { // webpackBootstrap
 	    priority: 3000,
 
 	    bind: function bind(el) {
-	      if (!(el.tagName === "INPUT" && el.type === "radio")) {
-	        this.event = el.tagName === "SELECT" ? "change" : "input";
+	      this.isRadio = el.tagName === "INPUT" && el.type === "radio";
+	      if (!this.isRadio) {
+	        this.event = el.getAttribute("event-name") || (el.tagName === "SELECT" ? "change" : "input");
 
-	        bindEvent(el, this.event, this.publish);
+	        var self = this;
+	        if (!this.callback) {
+	          this.callback = function () {
+	            self.publish();
+	          };
+	        }
+
+	        bindEvent(el, this.event, this.callback);
 	      }
 	    },
 
 	    unbind: function unbind(el) {
-	      if (!(el.tagName === "INPUT" && el.type === "radio")) {
-	        unbindEvent(el, this.event, this.publish);
+	      if (!this.isRadio) {
+	        unbindEvent(el, this.event, this.callback);
 	      }
 	    },
 
 	    routine: function routine(el, value) {
-	      if (el.tagName === "INPUT" && el.type === "radio") {
+	      if (this.isRadio) {
 	        el.setAttribute("value", value);
-	      } else if (window.jQuery) {
-	        el = jQuery(el);
-
-	        if (getString(value) !== getString(el.val())) {
-	          el.val(defined(value) ? value : "");
-	        }
 	      } else {
 	        if (el.type === "select-multiple") {
 	          if (value instanceof Array) {
