@@ -39,7 +39,7 @@ export class Binding {
         identifier = keys[i]
         value = this.view.binders[identifier]
 
-        if (identifier !== '*' && identifier.indexOf('*') > -1) {
+        if (identifier.indexOf('*') > -1) {
           regexp = new RegExp(`^${identifier.replace(/\*/g, '.+')}$`)
 
           if (regexp.test(this.type)) {
@@ -53,7 +53,7 @@ export class Binding {
     }
 
     if (!binder) {
-      binder = this.view.binders['*']
+      binder = rivets.fallbackBinder
     }
     if (binder instanceof Function) {
       binder = {routine: binder}

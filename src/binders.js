@@ -352,16 +352,6 @@ const binders = {
         el.className = elClass.replace(` ${this.args[0]} `, ' ').trim()
       }
     }
-  },
-
-  // Sets the attribute on the element. If no binder above is matched it will fall
-  // back to using this binder.
-  '*': function(el, value) {
-    if (defined(value)) {
-      el.setAttribute(this.type, value)
-    } else {
-      el.removeAttribute(this.type)
-    }
   }
 }
 

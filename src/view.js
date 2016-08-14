@@ -147,7 +147,7 @@ export default class View {
           for (identifier in this.binders) {
             let value = this.binders[identifier]
 
-            if (identifier !== '*' && identifier.indexOf('*') > -1) {
+            if (identifier.indexOf('*') > -1) {
               let regexp = new RegExp(`^${identifier.replace(/\*/g, '.+')}$`)
 
               if (regexp.test(type)) {
@@ -159,7 +159,7 @@ export default class View {
         }
 
         if (!binder) {
-          binder = this.binders['*']
+          binder = rivets.fallbackBinder
         }
 
         if (binder.block) {

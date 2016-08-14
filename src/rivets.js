@@ -30,6 +30,16 @@ const rivets = {
     this.call(context, ev, binding.view.models)
   },
 
+  // Sets the attribute on the element. If no binder above is matched it will fall
+  // back to using this binder.
+  fallbackBinder: function(el, value) {
+    if (value != null) {
+      el.setAttribute(this.type, value)
+    } else {
+      el.removeAttribute(this.type)
+    }
+  },
+
   // Merges an object literal into the corresponding global options.
   configure: function(options = {}) {
     Object.keys(options).forEach(option => {
