@@ -113,7 +113,9 @@ export default class View {
       }
 
       if (!block) {
-        Array.prototype.slice.call(node.childNodes).forEach(parse)
+        for (let i = 0; i < node.childNodes.length; i++) {
+          parse(node.childNodes[i]);
+        }
       }
     }
 
@@ -133,7 +135,7 @@ export default class View {
     let bindingRegExp = this.bindingRegExp()
     let block = node.nodeName === 'SCRIPT' || node.nodeName === 'STYLE'
     let nodeAttributes = node.attributes
-    let attributes, type, binder
+    var attributes, type, binder, identifier
 
     for (let i = 0, len = nodeAttributes.length; i < len; i++) {
       let attribute = nodeAttributes[i]    
@@ -142,7 +144,7 @@ export default class View {
         binder = this.binders[type]
 
         if (!binder) {
-          Object.keys(this.binders).forEach(identifier => {
+          for (identifier in this.binders) {
             let value = this.binders[identifier]
 
             if (identifier !== '*' && identifier.indexOf('*') > -1) {
@@ -152,10 +154,10 @@ export default class View {
                 binder = value
               }
             }
-          })
+          }
         }
 
-        if (!defined(binder)) {
+        if (!binder) {
           binder = this.binders['*']
         }
 

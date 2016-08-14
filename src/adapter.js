@@ -114,6 +114,7 @@ const adapter = {
   },
 
   observe: function(obj, keypath, callback) {
+    var value;
     let callbacks = this.weakReference(obj).callbacks
 
     if (!callbacks[keypath]) {
@@ -121,7 +122,7 @@ const adapter = {
       let desc = Object.getOwnPropertyDescriptor(obj, keypath)
 
       if (!desc || !(desc.get || desc.set || !desc.configurable)) {
-        let value = obj[keypath]
+        value = obj[keypath]
 
         Object.defineProperty(obj, keypath, {
           enumerable: true,

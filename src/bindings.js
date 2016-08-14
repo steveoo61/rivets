@@ -31,14 +31,15 @@ export class Binding {
 
   // Sets the binder to use when binding and syncing.
   setBinder() {
+    var identifier, value, regexp;
     this.binder = this.view.binders[this.type]
 
     if (!this.binder) {
-      Object.keys(this.view.binders).forEach(identifier => {
-        let value = this.view.binders[identifier]
+      for (identifier in this.view.binders) {
+        value = this.view.binders[identifier]
 
         if (identifier !== '*' && identifier.indexOf('*') > -1) {
-          let regexp = new RegExp(`^${identifier.replace(/\*/g, '.+')}$`)
+          regexp = new RegExp(`^${identifier.replace(/\*/g, '.+')}$`)
 
           if (regexp.test(this.type)) {
             this.binder = value
@@ -46,7 +47,7 @@ export class Binding {
             this.args.shift()
           }
         }
-      })
+      }
     }
 
     if (!defined(this.binder)) {
@@ -177,10 +178,10 @@ export class Binding {
 
   // Publishes the value currently set on the input element back to the model.
   publish() {
-    let value;
+    var value, lastformatterIndex;
     if (this.observer) {
       value = this.getValue(this.el)
-      const lastformatterIndex = this.formatters.length - 1
+      lastformatterIndex = this.formatters.length - 1
 
       this.formatters.slice(0).reverse().forEach((formatter, fiReversed) => {
         const fi = lastformatterIndex - fiReversed
@@ -189,7 +190,7 @@ export class Binding {
         const f = this.view.formatters[id]
         const processedArgs = this.parseFormatterArguments(args, fi)
 
-        if (defined(f) && f.publish) {
+        if (f && f.publish) {
           value = f.publish(value, ...processedArgs)
         }
       })
@@ -340,6 +341,7 @@ export class ComponentBinding extends Binding {
   // Intercepts `Rivets.Binding::bind` to build `@componentView` with a localized
   // map of models from the root view. Bind `@componentView` on subsequent calls.
   bind() {
+    var options = {}
     if (!this.bound) {
       Object.keys(this.observers).forEach(key => {
         let keypath = this.observers[key]
@@ -354,14 +356,13 @@ export class ComponentBinding extends Binding {
       this.bound = true
     }
 
-    if (defined(this.componentView)) {
+    if (this.componentView) {
       this.componentView.bind()
     } else {
       this.el.innerHTML = this.component.template.call(this)
       let scope = this.component.initialize.call(this, this.el, this.locals())
       this.el._bound = true
 
-      let options = {}
 
       EXTENSIONS.forEach(extensionType => {
         options[extensionType] = {}
