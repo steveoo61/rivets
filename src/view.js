@@ -134,11 +134,11 @@ export default class View {
   traverse(node) {
     let bindingRegExp = this.bindingRegExp()
     let block = node.nodeName === 'SCRIPT' || node.nodeName === 'STYLE'
-    let nodeAttributes = node.attributes
-    var attributes, type, binder, identifier
+    let attributes = node.attributes
+    var type, binder, identifier
 
-    for (let i = 0, len = nodeAttributes.length; i < len; i++) {
-      let attribute = nodeAttributes[i]    
+    for (let i = 0, len = attributes.length; i < len; i++) {
+      let attribute = attributes[i]
       if (bindingRegExp.test(attribute.name)) {
         type = attribute.name.replace(bindingRegExp, '')
         binder = this.binders[type]
@@ -152,6 +152,7 @@ export default class View {
 
               if (regexp.test(type)) {
                 binder = value
+                break
               }
             }
           }
@@ -162,13 +163,11 @@ export default class View {
         }
 
         if (binder.block) {
-          block = true
-          attributes = [attribute]
+          this.buildBinding(Binding, node, type, attribute.value)
+          return true;
         }
       }
     }
-
-    attributes = attributes || nodeAttributes
 
     for (let i = 0, len = attributes.length; i < len; i++) {
       let attribute = attributes[i]

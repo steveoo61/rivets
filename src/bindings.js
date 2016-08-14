@@ -46,6 +46,7 @@ export class Binding {
             binder = value
             this.args = new RegExp(`^${identifier.replace(/\*/g, '(.+)')}$`).exec(this.type)
             this.args.shift()
+            break
           }
         }
       }
