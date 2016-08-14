@@ -16,6 +16,133 @@ const times = (n, cb) => {
 }
 
 const binders = {
+  // Binds an event handler on the element.
+  'on-*': {
+    function: true,
+    priority: 1000,
+
+      unbind: function(el) {
+      if (this.handler) {
+        unbindEvent(el, this.args[0], this.handler)
+      }
+    },
+
+    routine: function(el, value) {
+      if (this.handler) {
+        unbindEvent(el, this.args[0], this.handler)
+      }
+
+      this.handler = this.eventHandler(value)
+      bindEvent(el, this.args[0], this.handler)
+    }
+  },
+
+  // Appends bound instances of the element in place for each item in the array.
+  'each-*': {
+    block: true,
+      priority: 4000,
+
+      bind: function(el) {
+      if (!this.marker) {
+        let attr = [this.view.prefix, this.type].join('-').replace('--', '-')
+        this.marker = document.createComment(` rivets: ${this.type} `)
+        this.iterated = []
+
+        el.removeAttribute(attr)
+        el.parentNode.insertBefore(this.marker, el)
+        el.parentNode.removeChild(el)
+      } else {
+        this.iterated.forEach(view => {
+          view.bind()
+        })
+      }
+    },
+
+    unbind: function(el) {
+      if (this.iterated) {
+        this.iterated.forEach(view => {
+          view.unbind()
+        })
+      }
+    },
+
+    routine: function(el, collection) {
+      let modelName = this.args[0]
+      let collection = collection || []
+      let indexProp = el.getAttribute('index-property') || '$index'
+
+      if (this.iterated.length > collection.length) {
+        times(this.iterated.length - collection.length, () => {
+          let view = this.iterated.pop()
+          view.unbind()
+          this.marker.parentNode.removeChild(view.els[0])
+        })
+      }
+
+      collection.forEach((model, index) => {
+        let data = {$parent: this.view.models}
+        data[indexProp] = index
+        data[modelName] = model
+
+        if (!this.iterated[index]) {
+
+          let previous = this.marker
+
+          if (this.iterated.length) {
+            previous = this.iterated[this.iterated.length - 1].els[0]
+          }
+
+          let options = this.view.options()
+          options.preloadData = true
+
+          let template = el.cloneNode(true)
+          let view = rivets.bind(template, data, options)
+          this.iterated.push(view)
+          this.marker.parentNode.insertBefore(template, previous.nextSibling)
+        } else if (this.iterated[index].models[modelName] !== model) {
+          this.iterated[index].update(data)
+        }
+      })
+
+      if (el.nodeName === 'OPTION') {
+        this.view.bindings.forEach(binding => {
+          if (binding.el === this.marker.parentNode && binding.type === 'value') {
+            binding.sync()
+          }
+        })
+      }
+    },
+
+    update: function(models) {
+      let data = {}
+
+      //todo: add test and fix if necessary
+
+      Object.keys(models).forEach(key => {
+        if (key !== this.args[0]) {
+          data[key] = models[key]
+        }
+      })
+
+      this.iterated.forEach(view => {
+        view.update(data)
+      })
+    }
+  },
+
+  // Adds or removes the class from the element when value is true or false.
+  'class-*': function(el, value) {
+    let elClass = ` ${el.className} `
+
+    if (!value === (elClass.indexOf(` ${this.args[0]} `) > -1)) {
+      if (value) {
+        el.className = `${el.className} ${this.args[0]}`
+      } else {
+        el.className = elClass.replace(` ${this.args[0]} `, ' ').trim()
+      }
+    }
+  },
+
   // Sets the element's text value.
   text: (el, value) => {
     el.textContent = defined(value) ? value : ''
@@ -224,133 +351,6 @@ const binders = {
 
     update: function(models) {
       rivets.binders.if.update.call(this, models)
-    }
-  },
-
-  // Binds an event handler on the element.
-  'on-*': {
-    function: true,
-    priority: 1000,
-
-    unbind: function(el) {
-      if (this.handler) {
-        unbindEvent(el, this.args[0], this.handler)
-      }
-    },
-
-    routine: function(el, value) {
-      if (this.handler) {
-        unbindEvent(el, this.args[0], this.handler)
-      }
-
-      this.handler = this.eventHandler(value)
-      bindEvent(el, this.args[0], this.handler)
-    }
-  },
-
-  // Appends bound instances of the element in place for each item in the array.
-  'each-*': {
-    block: true,
-    priority: 4000,
-
-    bind: function(el) {
-      if (!this.marker) {
-        let attr = [this.view.prefix, this.type].join('-').replace('--', '-')
-        this.marker = document.createComment(` rivets: ${this.type} `)
-        this.iterated = []
-
-        el.removeAttribute(attr)
-        el.parentNode.insertBefore(this.marker, el)
-        el.parentNode.removeChild(el)
-      } else {
-        this.iterated.forEach(view => {
-          view.bind()
-        })
-      }
-    },
-
-    unbind: function(el) {
-      if (this.iterated) {
-        this.iterated.forEach(view => {
-          view.unbind()
-        })
-      }
-    },
-
-    routine: function(el, collection) {
-      let modelName = this.args[0]
-      let collection = collection || []
-      let indexProp = el.getAttribute('index-property') || '$index'
-
-      if (this.iterated.length > collection.length) {
-        times(this.iterated.length - collection.length, () => {
-          let view = this.iterated.pop()
-          view.unbind()
-          this.marker.parentNode.removeChild(view.els[0])
-        })
-      }
-
-      collection.forEach((model, index) => {
-        let data = {$parent: this.view.models}
-        data[indexProp] = index
-        data[modelName] = model
-
-        if (!this.iterated[index]) {
-
-          let previous = this.marker
-
-          if (this.iterated.length) {
-            previous = this.iterated[this.iterated.length - 1].els[0]
-          }
-
-          let options = this.view.options()
-          options.preloadData = true
-
-          let template = el.cloneNode(true)
-          let view = rivets.bind(template, data, options)
-          this.iterated.push(view)
-          this.marker.parentNode.insertBefore(template, previous.nextSibling)
-        } else if (this.iterated[index].models[modelName] !== model) {
-          this.iterated[index].update(data)
-        }
-      })
-
-      if (el.nodeName === 'OPTION') {
-        this.view.bindings.forEach(binding => {
-          if (binding.el === this.marker.parentNode && binding.type === 'value') {
-            binding.sync()
-          }
-        })
-      }
-    },
-
-    update: function(models) {
-      let data = {}
-
-      //todo: add test and fix if necessary
-
-      Object.keys(models).forEach(key => {
-        if (key !== this.args[0]) {
-          data[key] = models[key]
-        }
-      })
-
-      this.iterated.forEach(view => {
-        view.update(data)
-      })
-    }
-  },
-
-  // Adds or removes the class from the element when value is true or false.
-  'class-*': function(el, value) {
-    let elClass = ` ${el.className} `
-
-    if (!value === (elClass.indexOf(` ${this.args[0]} `) > -1)) {
-      if (value) {
-        el.className = `${el.className} ${this.args[0]}`
-      } else {
-        el.className = elClass.replace(` ${this.args[0]} `, ' ').trim()
-      }
     }
   }
 }
