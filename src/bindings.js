@@ -24,25 +24,26 @@ export class Binding {
     this.dependencies = []
     this.formatterObservers = {}
     this.model = undefined
-    this.setBinder()
-
+    this.binder = this.getBinder()
     this.sync = this.sync.bind(this)
   }
 
   // Sets the binder to use when binding and syncing.
-  setBinder() {
-    var identifier, value, regexp;
-    this.binder = this.view.binders[this.type]
+  getBinder() {
+    var identifier, value, regexp, keys;
+    var binder = this.view.binders[this.type]
 
-    if (!this.binder) {
-      for (identifier in this.view.binders) {
+    if (!binder) {
+      keys = Object.keys(this.view.binders);
+      for (let i = 0; i < keys.length; i++) {
+        identifier = keys[i]
         value = this.view.binders[identifier]
 
         if (identifier !== '*' && identifier.indexOf('*') > -1) {
           regexp = new RegExp(`^${identifier.replace(/\*/g, '.+')}$`)
 
           if (regexp.test(this.type)) {
-            this.binder = value
+            binder = value
             this.args = new RegExp(`^${identifier.replace(/\*/g, '(.+)')}$`).exec(this.type)
             this.args.shift()
           }
@@ -50,13 +51,14 @@ export class Binding {
       }
     }
 
-    if (!defined(this.binder)) {
-      this.binder = this.view.binders['*']
+    if (!binder) {
+      binder = this.view.binders['*']
+    }
+    if (binder instanceof Function) {
+      binder = {routine: binder}
     }
 
-    if (this.binder instanceof Function) {
-      this.binder = {routine: this.binder}
-    }
+    return binder
   }
 
   // Observes the object keypath to run the provided callback.
