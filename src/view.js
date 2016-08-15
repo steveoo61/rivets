@@ -90,24 +90,20 @@ export default class View {
       let block = false
 
       if (node.nodeType === 3) {
-        let delimiters = this.templateDelimiters
+        let tokens = parseTemplate(node.data, this.templateDelimiters)
 
-        if (delimiters) {
-          let tokens = parseTemplate(node.data, delimiters)
+        if (tokens.length) {
+          if (!(tokens.length === 1 && tokens[0].type === 0)) {
+            tokens.forEach(token => {
+              let text = document.createTextNode(token.value)
+              node.parentNode.insertBefore(text, node)
 
-          if (tokens.length) {
-            if (!(tokens.length === 1 && tokens[0].type === 0)) {
-              tokens.forEach(token => {
-                let text = document.createTextNode(token.value)
-                node.parentNode.insertBefore(text, node)
+              if (token.type === 1) {
+                this.buildBinding(text, null, token.value, textBinder, null)
+              }
+            })
 
-                if (token.type === 1) {
-                  this.buildBinding(text, null, token.value, textBinder, null)
-                }
-              })
-
-              node.parentNode.removeChild(node)
-            }
+            node.parentNode.removeChild(node)
           }
         }
       } else if (node.nodeType === 1) {
@@ -127,8 +123,8 @@ export default class View {
     }
 
     this.bindings.sort((a, b) => {
-      let aPriority = defined(a.binder) ? (a.binder.priority || 0) : 0
-      let bPriority = defined(b.binder) ? (b.binder.priority || 0) : 0
+      let aPriority = a.binder ? (a.binder.priority || 0) : 0
+      let bPriority = b.binder ? (b.binder.priority || 0) : 0
       return bPriority - aPriority
     })
   }
