@@ -54,12 +54,8 @@ export default class View {
     return options
   }
 
-  // Regular expression used to match binding attributes.
-  bindingRegExp() {
-    return new RegExp(`^${this.prefix}-`)
-  }
 
-  buildBinding(binding, node, type, declaration) {
+  buildBinding(binding, node, type, declaration, binder, args) {
     let pipes = declaration.match(/((?:'[^']*')*(?:(?:[^\|']*(?:'[^']*')+[^\|']*)+|[^\|]+))|^$/g).map(pipe => {
       return pipe.trim()
     })
@@ -76,7 +72,7 @@ export default class View {
       options.dependencies = dependencies.split(/\s+/)
     }
 
-    this.bindings.push(new binding(this, node, type, keypath, options))
+    this.bindings.push(new binding(this, node, type, keypath, binder, args, options))
   }
 
   // Parses the DOM tree and builds `Binding` instances for every matched
@@ -100,7 +96,7 @@ export default class View {
                 node.parentNode.insertBefore(text, node)
 
                 if (token.type === 1) {
-                  this.buildBinding(TextBinding, text, null, token.value)
+                  this.buildBinding(TextBinding, text, null, token.value, null, null)
                 }
               })
 
@@ -132,16 +128,19 @@ export default class View {
   }
 
   traverse(node) {
-    let bindingRegExp = this.bindingRegExp()
+    let bindingRegExp = rivets._bindingRE
     let block = node.nodeName === 'SCRIPT' || node.nodeName === 'STYLE'
     let attributes = node.attributes
-    var type, binder, identifier
+    let bindInfos = []
+    var type, binder, identifier, args
+
 
     for (let i = 0, len = attributes.length; i < len; i++) {
       let attribute = attributes[i]
       if (bindingRegExp.test(attribute.name)) {
         type = attribute.name.replace(bindingRegExp, '')
         binder = this.binders[type]
+        args = undefined
 
         if (!binder) {
           for (identifier in this.binders) {
@@ -152,6 +151,8 @@ export default class View {
 
               if (regexp.test(type)) {
                 binder = value
+                args = new RegExp(`^${identifier.replace(/\*/g, '(.+)')}$`).exec(type)
+                args.shift()
                 break
               }
             }
@@ -163,18 +164,17 @@ export default class View {
         }
 
         if (binder.block) {
-          this.buildBinding(Binding, node, type, attribute.value)
+          this.buildBinding(Binding, node, type, attribute.value, binder, args)
           return true;
         }
+
+        bindInfos.push({attr: attribute, binder: binder, type: type, args: args})
       }
     }
 
-    for (let i = 0, len = attributes.length; i < len; i++) {
-      let attribute = attributes[i]
-      if (bindingRegExp.test(attribute.name)) {
-        let type = attribute.name.replace(bindingRegExp, '')
-        this.buildBinding(Binding, node, type, attribute.value)
-      }
+    for (let i = 0; i < bindInfos.length; i++) {
+      let bindInfo = bindInfos[i]
+      this.buildBinding(Binding, node, bindInfo.type, bindInfo.attr.value, bindInfo.binder, bindInfo.args)
     }
 
     if (!block) {

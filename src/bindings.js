@@ -14,7 +14,7 @@ export class Binding {
   // All information about the binding is passed into the constructor; the
   // containing view, the DOM node, the type of binding, the model object and the
   // keypath at which to listen for changes.
-  constructor(view, el, type, keypath, options = {}) {
+  constructor(view, el, type, keypath, binder, args, options = {}) {
     this.view = view
     this.el = el
     this.type = type
@@ -24,42 +24,13 @@ export class Binding {
     this.dependencies = []
     this.formatterObservers = {}
     this.model = undefined
-    this.binder = this.getBinder()
-    this.sync = this.sync.bind(this)
-  }
-
-  // Sets the binder to use when binding and syncing.
-  getBinder() {
-    var identifier, value, regexp, keys;
-    var binder = this.view.binders[this.type]
-
-    if (!binder) {
-      keys = Object.keys(this.view.binders);
-      for (let i = 0; i < keys.length; i++) {
-        identifier = keys[i]
-        value = this.view.binders[identifier]
-
-        if (identifier.indexOf('*') > -1) {
-          regexp = new RegExp(`^${identifier.replace(/\*/g, '.+')}$`)
-
-          if (regexp.test(this.type)) {
-            binder = value
-            this.args = new RegExp(`^${identifier.replace(/\*/g, '(.+)')}$`).exec(this.type)
-            this.args.shift()
-            break
-          }
-        }
-      }
-    }
-
-    if (!binder) {
-      binder = rivets.fallbackBinder
-    }
     if (binder instanceof Function) {
-      binder = {routine: binder}
+      this.binder = {routine: binder}
+    } else {
+      this.binder = binder
     }
-
-    return binder
+    this.args = args
+    this.sync = this.sync.bind(this)
   }
 
   // Observes the object keypath to run the provided callback.
@@ -288,7 +259,7 @@ export class ComponentBinding extends Binding {
     this.observers = {}
     this.upstreamObservers = {}
 
-    let bindingRegExp = view.bindingRegExp()
+    let bindingRegExp = rivets._bindingRE
 
     for (let i = 0, len = el.attributes.length; i < len; i++) {
       let attribute = el.attributes[i];
@@ -431,7 +402,7 @@ export class ComponentBinding extends Binding {
 // differences while avoiding it being overwritten.
 export class TextBinding extends Binding {
   // Initializes a text binding for the specified view and text node.
-  constructor(view, el, type, keypath, options = {}) {
+  constructor(view, el, type, keypath, binder, args, options = {}) {
     this.view = view
     this.el = el
     this.type = type

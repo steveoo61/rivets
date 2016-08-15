@@ -14,7 +14,16 @@ const rivets = {
   adapters: {},
 
   // Default attribute prefix.
-  prefix: 'rv',
+  _prefix: 'rv',
+
+  get prefix () {
+    return this._prefix
+  },
+
+  set prefix (value) {
+    this._prefix = value
+    this._bindingRE = new RegExp(`^${value}-`)
+  },
 
   // Default template delimiters.
   templateDelimiters: ['{', '}'],
@@ -55,5 +64,7 @@ const rivets = {
     })
   }
 }
+
+rivets.prefix = 'rv';
 
 export default rivets
