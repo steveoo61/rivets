@@ -14,7 +14,7 @@ export class Binding {
   // All information about the binding is passed into the constructor; the
   // containing view, the DOM node, the type of binding, the model object and the
   // keypath at which to listen for changes.
-  constructor(view, el, type, keypath, binder, args, options = {}) {
+  constructor(view, el, type, keypath, binder, args, options) {
     this.view = view
     this.el = el
     this.type = type
