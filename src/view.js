@@ -130,7 +130,7 @@ export default class View {
   }
 
   traverse(node) {
-    let bindingRegExp = rivets._bindingRE
+    let bindingPrefix = rivets._fullPrefix
     let block = node.nodeName === 'SCRIPT' || node.nodeName === 'STYLE'
     let attributes = node.attributes
     let bindInfos = []
@@ -139,8 +139,8 @@ export default class View {
 
     for (let i = 0, len = attributes.length; i < len; i++) {
       let attribute = attributes[i]
-      if (bindingRegExp.test(attribute.name)) {
-        type = attribute.name.replace(bindingRegExp, '')
+      if (attribute.name.indexOf(bindingPrefix) === 0) {
+        type = attribute.name.slice(bindingPrefix.length)
         binder = this.binders[type]
         args = undefined
 

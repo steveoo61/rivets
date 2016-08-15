@@ -259,11 +259,11 @@ export class ComponentBinding extends Binding {
     this.observers = {}
     this.upstreamObservers = {}
 
-    let bindingRegExp = rivets._bindingRE
+    let bindingPrefix = rivets._fullPrefix
 
     for (let i = 0, len = el.attributes.length; i < len; i++) {
       let attribute = el.attributes[i];
-      if (!bindingRegExp.test(attribute.name)) {
+      if (attribute.name.indexOf(bindingPrefix) !== 0) {
         let propertyName = this.camelCase(attribute.name)
         let stat = this.component.static
 
