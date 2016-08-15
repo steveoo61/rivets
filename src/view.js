@@ -1,10 +1,16 @@
 import rivets from './rivets'
 import {OPTIONS, EXTENSIONS} from './constants'
-import {Binding, TextBinding, ComponentBinding} from './bindings'
+import {Binding, ComponentBinding} from './bindings'
 import {parseTemplate} from './parsers'
 
 const defined = (value) => {
   return value !== undefined && value !== null
+}
+
+const textBinder = {
+  routine: (node, value) => {
+    node.data = (value != null) ? value : ''
+  }
 }
 
 // A collection of bindings built from a set of parent nodes.
@@ -55,7 +61,7 @@ export default class View {
   }
 
 
-  buildBinding(binding, node, type, declaration, binder, args) {
+  buildBinding(node, type, declaration, binder, args) {
     let pipes = declaration.match(/((?:'[^']*')*(?:(?:[^\|']*(?:'[^']*')+[^\|']*)+|[^\|]+))|^$/g).map(pipe => {
       return pipe.trim()
     })
@@ -72,7 +78,7 @@ export default class View {
       options.dependencies = dependencies.split(/\s+/)
     }
 
-    this.bindings.push(new binding(this, node, type, keypath, binder, args, options))
+    this.bindings.push(new Binding(this, node, type, keypath, binder, args, options))
   }
 
   // Parses the DOM tree and builds `Binding` instances for every matched
@@ -96,7 +102,7 @@ export default class View {
                 node.parentNode.insertBefore(text, node)
 
                 if (token.type === 1) {
-                  this.buildBinding(TextBinding, text, null, token.value, null, null)
+                  this.buildBinding(text, null, token.value, textBinder, null)
                 }
               })
 
@@ -164,7 +170,7 @@ export default class View {
         }
 
         if (binder.block) {
-          this.buildBinding(Binding, node, type, attribute.value, binder, args)
+          this.buildBinding(node, type, attribute.value, binder, args)
           return true;
         }
 
@@ -174,7 +180,7 @@ export default class View {
 
     for (let i = 0; i < bindInfos.length; i++) {
       let bindInfo = bindInfos[i]
-      this.buildBinding(Binding, node, bindInfo.type, bindInfo.attr.value, bindInfo.binder, bindInfo.args)
+      this.buildBinding(node, bindInfo.type, bindInfo.attr.value, bindInfo.binder, bindInfo.args)
     }
 
     if (!block) {

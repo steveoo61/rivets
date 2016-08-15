@@ -397,27 +397,3 @@ export class ComponentBinding extends Binding {
     }
   }
 }
-
-// A text node binding, defined internally to deal with text and element node
-// differences while avoiding it being overwritten.
-export class TextBinding extends Binding {
-  // Initializes a text binding for the specified view and text node.
-  constructor(view, el, type, keypath, binder, args, options = {}) {
-    this.view = view
-    this.el = el
-    this.type = type
-    this.keypath = keypath
-    this.options = options
-    this.formatters = this.options.formatters || []
-    this.dependencies = []
-    this.formatterObservers = {}
-
-    this.binder = {
-      routine: (node, value) => {
-        node.data = defined(value) ? value : ''
-      }
-    }
-
-    this.sync = this.sync.bind(this)
-  }
-}
