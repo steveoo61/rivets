@@ -219,14 +219,10 @@ export default class View {
 
   // Publishes the input values from the view back to the model (reverse sync).
   publish() {
-    let publishes = this.select(binding => {
-      if (defined(binding.binder)) {
-        return binding.binder.publishes
+    this.bindings.forEach(binding => {
+      if (binding.binder && binding.binder.publishes) {
+        binding.publish()
       }
-    })
-
-    publishes.forEach(binding => {
-      binding.publish()
     })
   }
 
