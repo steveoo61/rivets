@@ -13,6 +13,37 @@ const textBinder = {
   }
 }
 
+const parseNode = (view, node) => {
+  let block = false
+
+  if (node.nodeType === 3) {
+    let tokens = parseTemplate(node.data, view.templateDelimiters)
+
+    if (tokens.length) {
+      if (!(tokens.length === 1 && tokens[0].type === 0)) {
+        tokens.forEach(token => {
+          let text = document.createTextNode(token.value)
+          node.parentNode.insertBefore(text, node)
+
+          if (token.type === 1) {
+            view.buildBinding(text, null, token.value, textBinder, null)
+          }
+        })
+
+        node.parentNode.removeChild(node)
+      }
+    }
+  } else if (node.nodeType === 1) {
+    block = view.traverse(node)
+  }
+
+  if (!block) {
+    for (let i = 0; i < node.childNodes.length; i++) {
+      parseNode(view, node.childNodes[i]);
+    }
+  }
+}
+
 // A collection of bindings built from a set of parent nodes.
 export default class View {
   // The DOM elements and the model objects for binding are passed into the
@@ -86,40 +117,9 @@ export default class View {
   build() {
     this.bindings = []
 
-    let parse = node => {
-      let block = false
-
-      if (node.nodeType === 3) {
-        let tokens = parseTemplate(node.data, this.templateDelimiters)
-
-        if (tokens.length) {
-          if (!(tokens.length === 1 && tokens[0].type === 0)) {
-            tokens.forEach(token => {
-              let text = document.createTextNode(token.value)
-              node.parentNode.insertBefore(text, node)
-
-              if (token.type === 1) {
-                this.buildBinding(text, null, token.value, textBinder, null)
-              }
-            })
-
-            node.parentNode.removeChild(node)
-          }
-        }
-      } else if (node.nodeType === 1) {
-        block = this.traverse(node)
-      }
-
-      if (!block) {
-        for (let i = 0; i < node.childNodes.length; i++) {
-          parse(node.childNodes[i]);
-        }
-      }
-    }
-
     let elements = this.els, i, len;
     for (i = 0, len = elements.length; i < len; i++) {
-      parse(elements[i])
+      parseNode(this, elements[i])
     }
 
     this.bindings.sort((a, b) => {
