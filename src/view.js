@@ -191,11 +191,6 @@ export default class View {
     return block
   }
 
-  // Returns an array of bindings where the supplied function evaluates to true.
-  select(fn) {
-    return this.bindings.filter(fn)
-  }
-
   // Binds all of the current bindings for this view.
   bind() {
     this.bindings.forEach(binding => {
