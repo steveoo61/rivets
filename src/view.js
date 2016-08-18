@@ -146,15 +146,11 @@ export default class View {
 
         if (!binder) {
           for (identifier in this.binders) {
-            let value = this.binders[identifier]
-
-            if (identifier.indexOf('*') > -1) {
-              let regexp = new RegExp(`^${identifier.replace(/\*/g, '.+')}$`)
-
-              if (regexp.test(type)) {
-                binder = value
-                args = new RegExp(`^${identifier.replace(/\*/g, '(.+)')}$`).exec(type)
-                args.shift()
+            let starIndex = identifier.indexOf('*')
+            if (starIndex > -1) {
+              if (type.slice(0, starIndex) === identifier.slice(0, -1)) {
+                binder = this.binders[identifier]
+                args = [type.slice(starIndex)]
                 break
               }
             }
