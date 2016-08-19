@@ -2,6 +2,8 @@ import rivets from './rivets'
 import {parseType} from './parsers'
 import {getInputValue} from './util'
 import {EXTENSIONS, OPTIONS} from './constants'
+import Observer from './observer'
+
 //there's a cyclic dependency that makes imported View a dummy object
 //import View from './view'
 
@@ -35,7 +37,7 @@ export class Binding {
 
   // Observes the object keypath to run the provided callback.
   observe(obj, keypath, callback) {
-    return rivets.sightglass(obj, keypath, callback, {
+    return new Observer(obj, keypath, callback, {
       root: this.view.rootInterface,
       adapters: this.view.adapters
     })
