@@ -4,8 +4,12 @@ This branch is used to keep the changes necessary to fit my needs:
  * Related: [486](https://github.com/mikeric/rivets/issues/486) [512](https://github.com/mikeric/rivets/issues/512) [417](https://github.com/mikeric/rivets/pull/417)
 * Change how to customize index name in each binder (using an attribute)
  * Related: [551](https://github.com/mikeric/rivets/issues/551) [552](https://github.com/mikeric/rivets/pull/552) 
-* Add ability to customize input event 
-* Do not bind publish, bind and unbind methods in binding instances
+* Add ability to customize input event through event-name attribute 
+* Do not bind publish, bind and unbind methods to binding instances
+* Register default binder through fallbackBinder option instead of * binder
+* Integrate sightglass into rivets code base
+* Remove view.select method 
+* Rename binding property args to arg and changed type from array to string
 
 
 # Rivets.js
