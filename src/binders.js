@@ -1,11 +1,7 @@
 import rivets from './rivets'
 
-const defined = (value) => {
-  return value !== undefined && value !== null
-}
-
 const getString = (value) => {
-  return defined(value) ? value.toString() : undefined
+  return value != null ? value.toString() : undefined
 }
 
 const times = (n, cb) => {
@@ -142,12 +138,12 @@ const binders = {
 
   // Sets the element's text value.
   text: (el, value) => {
-    el.textContent = defined(value) ? value : ''
+    el.textContent = value != null ? value : ''
   },
 
   // Sets the element's HTML content.
   html: (el, value) => {
-    el.innerHTML = defined(value) ? value : ''
+    el.innerHTML = value != null ? value : ''
   },
 
   // Shows the element when value is true.
@@ -269,7 +265,7 @@ const binders = {
             }
           }
         } else if (getString(value) !== getString(el.value)) {
-          el.value = defined(value) ? value : ''
+          el.value = value != null ? value : ''
         }
       }
     }

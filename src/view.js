@@ -3,10 +3,6 @@ import {OPTIONS, EXTENSIONS} from './constants'
 import {Binding, ComponentBinding} from './bindings'
 import {parseTemplate} from './parsers'
 
-const defined = (value) => {
-  return value !== undefined && value !== null
-}
-
 const textBinder = {
   routine: (node, value) => {
     node.data = (value != null) ? value : ''
@@ -68,14 +64,14 @@ export default class View {
       }
 
       Object.keys(rivets[extensionType]).forEach(key => {
-        if (!defined(this[extensionType][key])) {
+        if (!this[extensionType][key]) {
           this[extensionType][key] = rivets[extensionType][key]
         }
       })
     })
 
     OPTIONS.forEach(option => {
-      this[option] = defined(options[option]) ? options[option] : rivets[option]
+      this[option] = (options[option] != null) ? options[option] : rivets[option]
     })
 
     this.build()
@@ -224,7 +220,7 @@ export default class View {
     })
 
     this.bindings.forEach(binding => {
-      if (defined(binding.update)) {
+      if (binding.update) {
         binding.update(models)
       }
     })

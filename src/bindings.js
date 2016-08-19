@@ -6,10 +6,6 @@ import Observer from './observer'
 //there's a cyclic dependency that makes imported View a dummy object
 //import View from './view'
 
-const defined = (value) => {
-  return value !== undefined && value !== null
-}
-
 function getInputValue(el) {
   let results = []
   if (el.type === 'checkbox') {
@@ -78,7 +74,7 @@ export class Binding {
         if (type === 0) {
           return value
         } else {
-          if (!defined(this.formatterObservers[formatterIndex])) {
+          if (!this.formatterObservers[formatterIndex]) {
             this.formatterObservers[formatterIndex] = {}
           }
 
@@ -153,7 +149,7 @@ export class Binding {
         this.dependencies = []
         this.model = this.observer.target
 
-        if (defined(this.model) && deps && deps.length) {
+        if (this.model && deps && deps.length) {
           deps.forEach(dependency => {
             let observer = this.observe(this.model, dependency, this.sync)
             this.dependencies.push(observer)
@@ -196,11 +192,11 @@ export class Binding {
   bind() {
     this.parseTarget()
 
-    if (defined(this.binder.bind)) {
+    if (this.binder.bind) {
       this.binder.bind.call(this, this.el)
     }
 
-    if (defined(this.model) && defined(this.options.dependencies)) {
+    if (this.model && this.options.dependencies) {
       this.options.dependencies.forEach(dependency => {
         let observer = this.observe(this.model, dependency, this.sync)
         this.dependencies.push(observer)
@@ -214,11 +210,11 @@ export class Binding {
 
   // Unsubscribes from the model and the element.
   unbind() {
-    if (defined(this.binder.unbind)) {
+    if (this.binder.unbind) {
       this.binder.unbind.call(this, this.el)
     }
 
-    if (defined(this.observer)) {
+    if (this.observer) {
       this.observer.unobserve()
     }
 
@@ -243,18 +239,18 @@ export class Binding {
   // Updates the binding's model from what is currently set on the view. Unbinds
   // the old model first and then re-binds with the new model.
   update(models = {}) {
-    if (defined(this.observer)) {
+    if (this.observer) {
       this.model = this.observer.target
     }
 
-    if (defined(this.binder.update)) {
+    if (this.binder.update) {
       this.binder.update.call(this, models)
     }
   }
 
   // Returns elements value
   getValue(el) {
-    if (this.binder && defined(this.binder.getValue)) {
+    if (this.binder && this.binder.getValue) {
       return this.binder.getValue.call(this, el)
     } else {
       return getInputValue(el)
@@ -365,14 +361,14 @@ export class ComponentBinding extends Binding {
         }
 
         Object.keys(this.view[extensionType]).forEach(key => {
-          if (!defined(options[extensionType][key])) {
+          if (options[extensionType][key]) {
             options[extensionType][key] = this.view[extensionType][key]
           }
         })
       })
 
       OPTIONS.forEach(option => {
-        if (defined(this.component[option])) {
+        if (this.component[option] != null) {
           options[option] = this.component[option]
         } else {
           options[option] = this.view[option]
@@ -409,7 +405,7 @@ export class ComponentBinding extends Binding {
       this.observers[key].unobserve()
     })
 
-    if (defined(this.componentView)) {
+    if (this.componentView) {
       this.componentView.unbind.call(this)
     }
   }
