@@ -13,7 +13,7 @@ const parseNode = (view, node) => {
   let block = false
 
   if (node.nodeType === 3) {
-    let tokens = parseTemplate(node.data, view.templateDelimiters)
+    let tokens = parseTemplate(node.data, rivets.templateDelimiters)
 
     if (tokens) {
       for (let i = 0; i < tokens.length; i++) {
