@@ -31,22 +31,26 @@ export function parseType(string) {
 // Parses the template and returns a set of tokens, separating static portions
 // of text from binding declarations.
 export function parseTemplate(template, delimiters) {
-  let tokens = []
+  var tokens
   let length = template.length
   let index = 0
   let lastIndex = 0
+  let open = delimiters[0], close = delimiters[1]
 
   while (lastIndex < length) {
-    index = template.indexOf(delimiters[0], lastIndex)
+    index = template.indexOf(open, lastIndex)
 
     if (index < 0) {
-      tokens.push({
-        type: TEXT,
-        value: template.slice(lastIndex)
-      })
+      if (tokens) {
+        tokens.push({
+          type: TEXT,
+          value: template.slice(lastIndex)
+        })
+      }
 
       break
     } else {
+      tokens || (tokens = [])
       if (index > 0 && lastIndex < index) {
         tokens.push({
           type: TEXT,
@@ -54,11 +58,11 @@ export function parseTemplate(template, delimiters) {
         })
       }
 
-      lastIndex = index + delimiters[0].length
-      index = template.indexOf(delimiters[1], lastIndex)
+      lastIndex = index + open.length
+      index = template.indexOf(close, lastIndex)
 
       if (index < 0) {
-        let substring = template.slice(lastIndex - delimiters[1].length)
+        let substring = template.slice(lastIndex - close.length)
         let lastToken = tokens[tokens.length - 1]
 
         if (lastToken && lastToken.type === TEXT) {
@@ -80,7 +84,7 @@ export function parseTemplate(template, delimiters) {
         value: value
       })
 
-      lastIndex = index + delimiters[1].length
+      lastIndex = index + close.length
     }
   }
 

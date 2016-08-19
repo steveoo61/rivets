@@ -21,17 +21,11 @@ describe('Parsers', function () {
     })
 
     describe("with no binding fragments", function() {
-      it("should return a single text token", function() {
+      it("should return undefined", function() {
         template = "Hello World!"
-        expected = [{type: 0, value: "Hello World!"}]
 
         results = parsers.parseTemplate(template, ['{{', '}}'])
-        results.length.should.equal(1)
-
-        for (i = 0; i < results.length; i++) {
-          results[i].type.should.equal(expected[i].type)
-          results[i].value.should.equal(expected[i].value)
-        }
+        Should.not.exist(results)
       })
     })
 

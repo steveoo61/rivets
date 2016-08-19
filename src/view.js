@@ -19,20 +19,20 @@ const parseNode = (view, node) => {
   if (node.nodeType === 3) {
     let tokens = parseTemplate(node.data, view.templateDelimiters)
 
-    if (tokens.length) {
-      if (!(tokens.length === 1 && tokens[0].type === 0)) {
-        tokens.forEach(token => {
-          let text = document.createTextNode(token.value)
-          node.parentNode.insertBefore(text, node)
+    if (tokens) {
+      for (let i = 0; i < tokens.length; i++) {
+        let token = tokens[i]
+        let text = document.createTextNode(token.value)
+        node.parentNode.insertBefore(text, node)
 
-          if (token.type === 1) {
-            view.buildBinding(text, null, token.value, textBinder, null)
-          }
-        })
-
-        node.parentNode.removeChild(node)
+        if (token.type === 1) {
+          view.buildBinding(text, null, token.value, textBinder, null)
+        }
       }
+
+      node.parentNode.removeChild(node)
     }
+    block = true
   } else if (node.nodeType === 1) {
     block = view.traverse(node)
   }
