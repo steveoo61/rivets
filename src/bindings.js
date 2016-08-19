@@ -1,6 +1,5 @@
 import rivets from './rivets'
 import {parseType} from './parsers'
-import {getInputValue} from './util'
 import {EXTENSIONS, OPTIONS} from './constants'
 import Observer from './observer'
 
@@ -9,6 +8,24 @@ import Observer from './observer'
 
 const defined = (value) => {
   return value !== undefined && value !== null
+}
+
+function getInputValue(el) {
+  let results = []
+  if (el.type === 'checkbox') {
+    return el.checked
+  } else if (el.type === 'select-multiple') {
+
+    el.options.forEach(option => {
+      if (option.selected) {
+        results.push(option.value)
+      }
+    })
+
+    return results
+  } else {
+    return el.value
+  }
 }
 
 // A single binding between a model attribute and a DOM element.

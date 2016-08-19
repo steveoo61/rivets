@@ -1,5 +1,4 @@
 import rivets from './rivets'
-import {bindEvent, unbindEvent} from './util'
 
 const CHANGE_EVENT = 'change'
 
@@ -23,17 +22,17 @@ const binders = {
 
       unbind: function(el) {
       if (this.handler) {
-        unbindEvent(el, this.arg, this.handler)
+        el.addEventListener( this.arg, this.handler)
       }
     },
 
     routine: function(el, value) {
       if (this.handler) {
-        unbindEvent(el, this.arg, this.handler)
+        el.removeEventListener(this.arg, this.handler)
       }
 
       this.handler = this.eventHandler(value)
-      bindEvent(el, this.arg, this.handler)
+      el.addEventListener(this.arg, this.handler)
     }
   },
 
@@ -186,11 +185,11 @@ const binders = {
           self.publish();
         }
       }
-      bindEvent(el, CHANGE_EVENT, this.callback)
+      el.addEventListener(CHANGE_EVENT, this.callback)
     },
 
     unbind: function(el) {
-      unbindEvent(el, CHANGE_EVENT, this.callback)
+      el.removeEventListener(CHANGE_EVENT, this.callback)
     },
 
     routine: function(el, value) {
@@ -216,11 +215,11 @@ const binders = {
           self.publish();
         }
       }
-      bindEvent(el, CHANGE_EVENT, this.callback)
+      el.addEventListener(CHANGE_EVENT, this.callback)
     },
 
     unbind: function(el) {
-      unbindEvent(el, CHANGE_EVENT, this.callback)
+      el.removeEventListener(CHANGE_EVENT, this.callback)
     },
 
     routine: function(el, value) {
@@ -250,13 +249,13 @@ const binders = {
           }
         }
 
-        bindEvent(el, this.event, this.callback)
+        el.addEventListener(this.event, this.callback)
       }
     },
 
     unbind: function(el) {
       if (!this.isRadio) {
-        unbindEvent(el, this.event, this.callback)
+        el.removeEventListener(this.event, this.callback)
       }
     },
 
