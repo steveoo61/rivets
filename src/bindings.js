@@ -43,11 +43,7 @@ export class Binding {
     this.dependencies = []
     this.formatterObservers = {}
     this.model = undefined
-    if (binder instanceof Function) {
-      this.binder = {routine: binder}
-    } else {
-      this.binder = binder
-    }
+    this.binder = binder
     this.arg = arg
     this.sync = this.sync.bind(this)
   }
@@ -129,7 +125,7 @@ export class Binding {
   }
 
   // Sets the value for the binding. This Basically just runs the binding routine
-  // with the suplied value formatted.
+  // with the supplied value formatted.
   set(value) {
     if ((value instanceof Function) && !this.binder.function) {
       value = this.formattedValue(value.call(this.model))
@@ -137,8 +133,10 @@ export class Binding {
       value = this.formattedValue(value)
     }
 
-    if (this.binder.routine) {
-      this.binder.routine.call(this, this.el, value)
+    let routineFn = this.binder.routine || this.binder
+
+    if (routineFn instanceof Function) {
+      routineFn.call(this, this.el, value)
     }
   }
 

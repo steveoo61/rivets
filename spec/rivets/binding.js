@@ -1,5 +1,5 @@
 describe('Rivets.Binding', function() {
-  var model, el, view, binding, originalPrefix, adapter;
+  var model, el, view, binding, originalPrefix, adapter, routineFn;
 
   beforeEach(function() {
     originalPrefix = rivets.prefix;
@@ -19,7 +19,8 @@ describe('Rivets.Binding', function() {
   });
 
   it('gets assigned the proper binder routine matching the identifier', function() {
-    binding.binder.routine.should.equal(rivets.binders.text)
+    routineFn = binding.binder.routine || binding.binder
+    routineFn.should.equal(rivets.binders.text)
   });
 
   describe('when bind to non configurable properties', function() {
@@ -145,25 +146,39 @@ describe('Rivets.Binding', function() {
 
   describe('set()', function() {
     it('performs the binding routine with the supplied value', function() {
-      sinon.spy(binding.binder, 'routine');
+      if (binding.binder.routine) {
+        routineFn = sinon.spy(binding.binder, 'routine')
+      } else {
+        routineFn = sinon.spy(binding, 'binder')
+      }
       binding.set('sweater');
-      binding.binder.routine.calledWith(el, 'sweater').should.be.true
+      routineFn.calledWith(el, 'sweater').should.be.true
     });
 
     it('applies any formatters to the value before performing the routine', function() {
+      if (binding.binder.routine) {
+        routineFn = sinon.spy(binding.binder, 'routine')
+      } else {
+        routineFn = sinon.spy(binding, 'binder')
+      }
+
       view.formatters.awesome = function(value) { return 'awesome ' + value };
 
       binding.formatters.push('awesome');
-      sinon.spy(binding.binder, 'routine');
       binding.set('sweater');
-      binding.binder.routine.calledWith(el, 'awesome sweater').should.be.true
+      routineFn.calledWith(el, 'awesome sweater').should.be.true
     });
 
     it('calls methods with the object as context', function() {
+      if (binding.binder.routine) {
+        routineFn = sinon.spy(binding.binder, 'routine')
+      } else {
+        routineFn = sinon.spy(binding, 'binder')
+      }
+
       binding.model = {foo: 'bar'};
-      sinon.spy(binding.binder, 'routine');
       binding.set(function() { return this.foo });
-      binding.binder.routine.calledWith(el, binding.model.foo).should.be.true
+      routineFn.calledWith(el, binding.model.foo).should.be.true
     })
   });
   
@@ -182,10 +197,15 @@ describe('Rivets.Binding', function() {
 
       view = rivets.bind(el, model);
       binding = view.bindings[0];
+      if (binding.binder.routine) {
+        routineFn = sinon.spy(binding.binder, 'routine')
+      } else {
+        routineFn = sinon.spy(binding, 'binder')
+      }
 
-      sinon.spy(binding.binder, 'routine');
+
       model.employee = new Employee("Peter");
-      binding.binder.routine.calledWith(el, "Peter").should.be.true
+      routineFn.calledWith(el, "Peter").should.be.true
     });
   });
   
@@ -215,10 +235,15 @@ describe('Rivets.Binding', function() {
         read: function(value) { return 'awesome ' + value }
       };
 
+      if (binding.binder.routine) {
+        routineFn = sinon.spy(binding.binder, 'routine')
+      } else {
+        routineFn = sinon.spy(binding, 'binder')
+      }
+
       binding.formatters.push('awesome');
-      sinon.spy(binding.binder, 'routine');
       binding.set('sweater');
-      binding.binder.routine.calledWith(el, 'awesome sweater').should.be.true
+      routineFn.calledWith(el, 'awesome sweater').should.be.true
     });
 
     it("should publish the value of a number input", function() {
