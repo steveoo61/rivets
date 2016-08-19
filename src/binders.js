@@ -41,7 +41,7 @@ const binders = {
 
       bind: function(el) {
       if (!this.marker) {
-        let attr = [this.view.prefix, this.type].join('-').replace('--', '-')
+        let attr = rivets._fullPrefix + this.type
         this.marker = document.createComment(` rivets: ${this.type} `)
         this.iterated = []
 
@@ -282,7 +282,7 @@ const binders = {
 
     bind: function(el) {
       if (!this.marker) {
-        let attr = [this.view.prefix, this.type].join('-').replace('--', '-')
+        let attr = rivets._fullPrefix + this.type
         let declaration = el.getAttribute(attr)
 
         this.marker = document.createComment(' rivets: ' + this.type + ' ' + declaration + ' ');
