@@ -23,17 +23,17 @@ const binders = {
 
       unbind: function(el) {
       if (this.handler) {
-        unbindEvent(el, this.args[0], this.handler)
+        unbindEvent(el, this.arg, this.handler)
       }
     },
 
     routine: function(el, value) {
       if (this.handler) {
-        unbindEvent(el, this.args[0], this.handler)
+        unbindEvent(el, this.arg, this.handler)
       }
 
       this.handler = this.eventHandler(value)
-      bindEvent(el, this.args[0], this.handler)
+      bindEvent(el, this.arg, this.handler)
     }
   },
 
@@ -67,7 +67,7 @@ const binders = {
     },
 
     routine: function(el, collection) {
-      let modelName = this.args[0]
+      let modelName = this.arg
       let collection = collection || []
       let indexProp = el.getAttribute('index-property') || '$index'
 
@@ -119,7 +119,7 @@ const binders = {
       //todo: add test and fix if necessary
 
       Object.keys(models).forEach(key => {
-        if (key !== this.args[0]) {
+        if (key !== this.arg) {
           data[key] = models[key]
         }
       })
@@ -134,11 +134,11 @@ const binders = {
   'class-*': function(el, value) {
     let elClass = ` ${el.className} `
 
-    if (!value === (elClass.indexOf(` ${this.args[0]} `) > -1)) {
+    if (!value === (elClass.indexOf(` ${this.arg} `) > -1)) {
       if (value) {
-        el.className = `${el.className} ${this.args[0]}`
+        el.className = `${el.className} ${this.arg}`
       } else {
-        el.className = elClass.replace(` ${this.args[0]} `, ' ').trim()
+        el.className = elClass.replace(` ${this.arg} `, ' ').trim()
       }
     }
   },

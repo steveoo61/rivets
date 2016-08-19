@@ -92,7 +92,7 @@ export default class View {
   }
 
 
-  buildBinding(node, type, declaration, binder, args) {
+  buildBinding(node, type, declaration, binder, arg) {
     let pipes = declaration.match(/((?:'[^']*')*(?:(?:[^\|']*(?:'[^']*')+[^\|']*)+|[^\|]+))|^$/g).map(pipe => {
       return pipe.trim()
     })
@@ -109,7 +109,7 @@ export default class View {
       options.dependencies = dependencies.split(/\s+/)
     }
 
-    this.bindings.push(new Binding(this, node, type, keypath, binder, args, options))
+    this.bindings.push(new Binding(this, node, type, keypath, binder, arg, options))
   }
 
   // Parses the DOM tree and builds `Binding` instances for every matched
@@ -134,7 +134,7 @@ export default class View {
     let block = node.nodeName === 'SCRIPT' || node.nodeName === 'STYLE'
     let attributes = node.attributes
     let bindInfos = []
-    var type, binder, identifier, args
+    var type, binder, identifier, arg
 
 
     for (let i = 0, len = attributes.length; i < len; i++) {
@@ -142,7 +142,7 @@ export default class View {
       if (attribute.name.indexOf(bindingPrefix) === 0) {
         type = attribute.name.slice(bindingPrefix.length)
         binder = this.binders[type]
-        args = undefined
+        arg = undefined
 
         if (!binder) {
           for (identifier in this.binders) {
@@ -150,7 +150,7 @@ export default class View {
             if (starIndex > -1) {
               if (type.slice(0, starIndex) === identifier.slice(0, -1)) {
                 binder = this.binders[identifier]
-                args = [type.slice(starIndex)]
+                arg = type.slice(starIndex)
                 break
               }
             }
@@ -162,17 +162,17 @@ export default class View {
         }
 
         if (binder.block) {
-          this.buildBinding(node, type, attribute.value, binder, args)
+          this.buildBinding(node, type, attribute.value, binder, arg)
           return true;
         }
 
-        bindInfos.push({attr: attribute, binder: binder, type: type, args: args})
+        bindInfos.push({attr: attribute, binder: binder, type: type, arg: arg})
       }
     }
 
     for (let i = 0; i < bindInfos.length; i++) {
       let bindInfo = bindInfos[i]
-      this.buildBinding(node, bindInfo.type, bindInfo.attr.value, bindInfo.binder, bindInfo.args)
+      this.buildBinding(node, bindInfo.type, bindInfo.attr.value, bindInfo.binder, bindInfo.arg)
     }
 
     if (!block) {
