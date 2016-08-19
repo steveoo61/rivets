@@ -1,7 +1,5 @@
 import rivets from './rivets'
 
-const CHANGE_EVENT = 'change'
-
 const defined = (value) => {
   return value !== undefined && value !== null
 }
@@ -185,11 +183,11 @@ const binders = {
           self.publish();
         }
       }
-      el.addEventListener(CHANGE_EVENT, this.callback)
+      el.addEventListener('change', this.callback)
     },
 
     unbind: function(el) {
-      el.removeEventListener(CHANGE_EVENT, this.callback)
+      el.removeEventListener('change', this.callback)
     },
 
     routine: function(el, value) {
@@ -215,11 +213,11 @@ const binders = {
           self.publish();
         }
       }
-      el.addEventListener(CHANGE_EVENT, this.callback)
+      el.addEventListener('change', this.callback)
     },
 
     unbind: function(el) {
-      el.removeEventListener(CHANGE_EVENT, this.callback)
+      el.removeEventListener('change', this.callback)
     },
 
     routine: function(el, value) {
