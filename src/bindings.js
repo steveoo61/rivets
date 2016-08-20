@@ -192,7 +192,7 @@ export class Binding {
   bind() {
     this.parseTarget()
 
-    if (this.binder.bind) {
+    if (this.binder.hasOwnProperty('bind')) {
       this.binder.bind.call(this, this.el)
     }
 
