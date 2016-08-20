@@ -36,6 +36,10 @@ rivets.bind = (el, models, options) => {
     viewOptions[option] = value != null ? value : rivets[option]
   })
 
+  viewOptions.starBinders = Object.keys(viewOptions.binders).filter(function (key) {
+    return key.indexOf('*') > 0
+  })
+
   let view = new View(el, models, viewOptions)
   view.bind()
   return view

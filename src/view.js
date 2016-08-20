@@ -100,6 +100,7 @@ export default class View {
     let block = node.nodeName === 'SCRIPT' || node.nodeName === 'STYLE'
     let attributes = node.attributes
     let bindInfos = []
+    let starBinders = this.options.starBinders
     var type, binder, identifier, arg
 
 
@@ -111,14 +112,12 @@ export default class View {
         arg = undefined
 
         if (!binder) {
-          for (identifier in this.options.binders) {
-            let starIndex = identifier.indexOf('*')
-            if (starIndex > -1) {
-              if (type.slice(0, starIndex) === identifier.slice(0, -1)) {
-                binder = this.options.binders[identifier]
-                arg = type.slice(starIndex)
-                break
-              }
+          for (let k = 0; k < starBinders.length; k++) {
+            identifier = starBinders[k]
+            if (type.slice(0, identifier.length - 1) === identifier.slice(0, -1)) {
+              binder = this.options.binders[identifier]
+              arg = type.slice(identifier.length - 1)
+              break
             }
           }
         }
