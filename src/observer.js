@@ -9,7 +9,8 @@ function error(message) {
   throw new Error('[Observer] ' + message)
 }
 
-Observer.adapters = {}
+var adapters
+var interfaces
 
 // Constructs a new keypath observer and kicks things off.
 function Observer(obj, keypath, callback, options) {
@@ -26,9 +27,14 @@ function Observer(obj, keypath, callback, options) {
   }
 }
 
+Observer.updateAdapters = function(adaptersOption) {
+  adapters = adaptersOption
+  interfaces = Object.keys(adaptersOption)
+}
+
 // Tokenizes the provided keypath string into interface + path tokens for the
 // observer to work with.
-Observer.tokenize = function(keypath, interfaces, root) {
+Observer.tokenize = function(keypath, root) {
   var tokens = []
   var current = {i: root, path: ''}
   var index, chr
@@ -51,7 +57,6 @@ Observer.tokenize = function(keypath, interfaces, root) {
 // Parses the keypath using the interfaces defined on the view. Sets variables
 // for the tokenized keypath as well as the end key.
 Observer.prototype.parse = function() {
-  var interfaces = this.interfaces()
   var root, path
 
   if (!interfaces.length) {
@@ -69,7 +74,7 @@ Observer.prototype.parse = function() {
     path = this.keypath
   }
 
-  this.tokens = Observer.tokenize(path, interfaces, root)
+  this.tokens = Observer.tokenize(path, root)
   this.key = this.tokens.pop()
 }
 
@@ -146,39 +151,21 @@ Observer.prototype.value = function() {
 // the full keypath is unreachable is a no-op.
 Observer.prototype.setValue = function(value) {
   if (isObject(this.target)) {
-    this.adapter(this.key).set(this.target, this.key.path, value)
+    adapters[this.key.i].set(this.target, this.key.path, value)
   }
 }
 
 // Gets the provided key on an object.
 Observer.prototype.get = function(key, obj) {
-  return this.adapter(key).get(obj, key.path)
+  return adapters[key.i].get(obj, key.path)
 }
 
 // Observes or unobserves a callback on the object using the provided key.
 Observer.prototype.set = function(active, key, obj, callback) {
   var action = active ? 'observe' : 'unobserve'
-  this.adapter(key)[action](obj, key.path, callback)
+  adapters[key.i][action](obj, key.path, callback)
 }
 
-// Returns an array of all unique adapter interfaces available.
-Observer.prototype.interfaces = function() {
-  var interfaces = Object.keys(this.options.adapters)
-
-  Object.keys(Observer.adapters).forEach(function(i) {
-    if (!~interfaces.indexOf(i)) {
-      interfaces.push(i)
-    }
-  })
-
-  return interfaces
-}
-
-// Convenience function to grab the adapter for a specific key.
-Observer.prototype.adapter = function(key) {
-  return this.options.adapters[key.i] ||
-    Observer.adapters[key.i]
-}
 
 // Unobserves the entire keypath.
 Observer.prototype.unobserve = function() {

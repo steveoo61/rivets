@@ -3,6 +3,7 @@ import View from './view'
 import {OPTIONS, EXTENSIONS} from './constants'
 import adapter from './adapter'
 import binders from './binders'
+import Observer from './observer'
 
 // Returns the public interface.
 
@@ -40,6 +41,8 @@ rivets.bind = (el, models, options) => {
     return key.indexOf('*') > 0
   })
 
+  Observer.updateAdapters(viewOptions.adapters)
+
   let view = new View(el, models, viewOptions)
   view.bind()
   return view
@@ -56,7 +59,7 @@ rivets.init = (component, el, data = {}) => {
   el.innerHTML = component.template.call(rivets, el)
   let scope = component.initialize.call(rivets, el, data)
 
-  let view = new View(el, scope)
+  let view = rivets.bind(el, scope)
   view.bind()
   return view
 }
