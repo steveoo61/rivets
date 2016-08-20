@@ -52,7 +52,10 @@ const rivets = {
   },
 
   // Merges an object literal into the corresponding global options.
-  configure: function(options = {}) {
+  configure: function(options) {
+    if (!options) {
+      return
+    }
     Object.keys(options).forEach(option => {
       let value = options[option]
 

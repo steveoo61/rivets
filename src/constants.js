@@ -1,4 +1,7 @@
 export const OPTIONS = [
+  'prefix',
+  'templateDelimiters',
+  'rootInterface',
   'preloadData',
   'handler'
 ]

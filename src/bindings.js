@@ -48,7 +48,7 @@ export class Binding {
   observe(obj, keypath, callback) {
     return new Observer(obj, keypath, callback, {
       root: rivets.rootInterface,
-      adapters: this.view.adapters
+      adapters: rivets.adapters
     })
   }
 
@@ -96,7 +96,7 @@ export class Binding {
     this.formatters.forEach((formatterStr, fi) => {
       let args = formatterStr.match(/[^\s']+|'([^']|'[^\s])*'|"([^"]|"[^\s])*"/g)
       let id = args.shift()
-      let formatter = this.view.formatters[id]
+      let formatter = this.view.options.formatters[id]
 
       const processedArgs = this.parseFormatterArguments(args, fi)
 
@@ -113,7 +113,7 @@ export class Binding {
   // Returns an event handler for the binding around the supplied function.
   eventHandler(fn) {
     let binding = this
-    let handler = binding.view.handler
+    let handler = binding.view.options.handler
 
     return function(ev) {
       handler.call(fn, this, ev, binding)
@@ -174,7 +174,7 @@ export class Binding {
         const fi = lastformatterIndex - fiReversed
         const args = formatter.split(/\s+/)
         const id = args.shift()
-        const f = this.view.formatters[id]
+        const f = this.view.options.formatters[id]
         const processedArgs = this.parseFormatterArguments(args, fi)
 
         if (f && f.publish) {
@@ -203,7 +203,7 @@ export class Binding {
       })
     }
 
-    if (this.view.preloadData) {
+    if (this.view.options.preloadData) {
       this.sync()
     }
   }
@@ -267,7 +267,7 @@ export class ComponentBinding extends Binding {
     this.view = view
     this.el = el
     this.type = type
-    this.component = this.view.components[this.type]
+    this.component = view.options.components[this.type]
     this.static = {}
     this.observers = {}
     this.upstreamObservers = {}
@@ -360,7 +360,7 @@ export class ComponentBinding extends Binding {
           })
         }
 
-        Object.keys(this.view[extensionType]).forEach(key => {
+        Object.keys(this.view.options[extensionType]).forEach(key => {
           if (options[extensionType][key]) {
             options[extensionType][key] = this.view[extensionType][key]
           }

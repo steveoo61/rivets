@@ -13,8 +13,7 @@ Observer.adapters = {}
 
 // Constructs a new keypath observer and kicks things off.
 function Observer(obj, keypath, callback, options) {
-  this.options = options || {}
-  this.options.adapters = this.options.adapters || {}
+  this.options = options
   this.keypath = keypath
   this.callback = callback
   this.objectPath = []

@@ -1,4 +1,5 @@
 import rivets from './rivets'
+import View from './view'
 
 const getString = (value) => {
   return value != null ? value.toString() : undefined
@@ -85,11 +86,12 @@ const binders = {
             previous = this.iterated[this.iterated.length - 1].els[0]
           }
 
-          let options = this.view.options()
-          options.preloadData = true
+          //todo
+          //options.preloadData = true
 
           let template = el.cloneNode(true)
-          let view = rivets.bind(template, data, options)
+          let view = new View(template, data, this.view.options)
+          view.bind()
           this.iterated.push(view)
           this.marker.parentNode.insertBefore(template, previous.nextSibling)
         } else if (this.iterated[index].models[modelName] !== model) {
@@ -304,7 +306,8 @@ const binders = {
           if (this.nested) {
             this.nested.bind()
           } else {
-            this.nested = rivets.bind(el, this.view.models, this.view.options())
+            this.nested = new View(el, this.view.models, this.view.options)
+            this.nested.bind()
           }
 
           this.marker.parentNode.insertBefore(el, this.marker.nextSibling)

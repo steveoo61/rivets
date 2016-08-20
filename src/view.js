@@ -1,5 +1,4 @@
 import rivets from './rivets'
-import {OPTIONS, EXTENSIONS} from './constants'
 import {Binding, ComponentBinding} from './bindings'
 import {parseTemplate} from './parsers'
 
@@ -45,7 +44,7 @@ export default class View {
   // The DOM elements and the model objects for binding are passed into the
   // constructor along with any local options that should be used throughout the
   // context of the view and it's bindings.
-  constructor(els, models, options = {}) {
+  constructor(els, models, options) {
     if (els.jquery || els instanceof Array) {
       this.els = els
     } else {
@@ -53,38 +52,9 @@ export default class View {
     }
 
     this.models = models
-
-    EXTENSIONS.forEach(extensionType => {
-      this[extensionType] = {}
-
-      if (options[extensionType]) {
-        Object.keys(options[extensionType]).forEach(key => {
-          this[extensionType][key] = options[extensionType][key]
-        })
-      }
-
-      Object.keys(rivets[extensionType]).forEach(key => {
-        if (!this[extensionType][key]) {
-          this[extensionType][key] = rivets[extensionType][key]
-        }
-      })
-    })
-
-    OPTIONS.forEach(option => {
-      this[option] = (options[option] != null) ? options[option] : rivets[option]
-    })
+    this.options = options
 
     this.build()
-  }
-
-  options() {
-    let options = {}
-
-    EXTENSIONS.concat(OPTIONS).forEach(option => {
-      options[option] = this[option]
-    })
-
-    return options
   }
 
 
@@ -137,15 +107,15 @@ export default class View {
       let attribute = attributes[i]
       if (attribute.name.indexOf(bindingPrefix) === 0) {
         type = attribute.name.slice(bindingPrefix.length)
-        binder = this.binders[type]
+        binder = this.options.binders[type]
         arg = undefined
 
         if (!binder) {
-          for (identifier in this.binders) {
+          for (identifier in this.options.binders) {
             let starIndex = identifier.indexOf('*')
             if (starIndex > -1) {
               if (type.slice(0, starIndex) === identifier.slice(0, -1)) {
-                binder = this.binders[identifier]
+                binder = this.options.binders[identifier]
                 arg = type.slice(starIndex)
                 break
               }
@@ -174,7 +144,7 @@ export default class View {
     if (!block) {
       let type = node.nodeName.toLowerCase()
 
-      if (this.components[type] && !node._bound) {
+      if (this.options.components[type] && !node._bound) {
         this.bindings.push(new ComponentBinding(this, node, type))
         block = true
       }

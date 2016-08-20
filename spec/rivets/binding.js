@@ -162,7 +162,7 @@ describe('Rivets.Binding', function() {
         routineFn = sinon.spy(binding, 'binder')
       }
 
-      view.formatters.awesome = function(value) { return 'awesome ' + value };
+      view.options.formatters.awesome = function(value) { return 'awesome ' + value };
 
       binding.formatters.push('awesome');
       binding.set('sweater');
@@ -231,7 +231,7 @@ describe('Rivets.Binding', function() {
   describe('publishTwoWay()', function() {
     var numberInput, valueInput;
     it('applies a two-way read formatter to function same as a single-way', function() {
-      view.formatters.awesome = {
+      view.options.formatters.awesome = {
         read: function(value) { return 'awesome ' + value }
       };
 
@@ -452,14 +452,14 @@ describe('Rivets.Binding', function() {
 
   describe('formattedValue()', function() {
     it('applies the current formatters on the supplied value', function() {
-      view.formatters.awesome = function(value) { return 'awesome ' + value };
+      view.options.formatters.awesome = function(value) { return 'awesome ' + value };
       binding.formatters.push('awesome');
       binding.formattedValue('hat').should.equal('awesome hat')
     });
 
     describe('with a multi-argument formatter string', function() {
       beforeEach(function() {
-        view.formatters.awesome = function(value, prefix) {
+        view.options.formatters.awesome = function(value, prefix) {
           return prefix + ' awesome ' + value
         };
 
@@ -474,7 +474,7 @@ describe('Rivets.Binding', function() {
     describe('with a formatter string with pipes in argument', function() {
       beforeEach(function () {
 
-        view.formatters.totally = function (value, prefix) {
+        view.options.formatters.totally = function (value, prefix) {
           return prefix + ' totally ' + value
         };
 
