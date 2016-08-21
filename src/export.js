@@ -41,7 +41,7 @@ rivets.bind = (el, models, options) => {
     return key.indexOf('*') > 0
   })
 
-  Observer.updateAdapters(viewOptions.adapters)
+  Observer.updateOptions(viewOptions)
 
   let view = new View(el, models, viewOptions)
   view.bind()

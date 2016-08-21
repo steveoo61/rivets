@@ -46,10 +46,7 @@ export class Binding {
 
   // Observes the object keypath to run the provided callback.
   observe(obj, keypath, callback) {
-    return new Observer(obj, keypath, callback, {
-      root: rivets.rootInterface,
-      adapters: rivets.adapters
-    })
+    return new Observer(obj, keypath, callback)
   }
 
   parseTarget() {
