@@ -18,7 +18,6 @@ function Observer(obj, keypath, callback) {
   this.keypath = keypath
   this.callback = callback
   this.objectPath = []
-  this.update = this.update.bind(this)
   this.parse()
   this.obj = this.getRootObject(obj)
 
@@ -87,12 +86,12 @@ Observer.prototype.realize = function() {
     if (isObject(current)) {
       if (typeof this.objectPath[index] !== 'undefined') {
         if (current !== (prev = this.objectPath[index])) {
-          this.set(false, token, prev, this.update)
-          this.set(true, token, current, this.update)
+          this.set(false, token, prev, this)
+          this.set(true, token, current, this)
           this.objectPath[index] = current
         }
       } else {
-        this.set(true, token, current, this.update)
+        this.set(true, token, current, this)
         this.objectPath[index] = current
       }
 
@@ -103,7 +102,7 @@ Observer.prototype.realize = function() {
       }
 
       if (prev = this.objectPath[index]) {
-        this.set(false, token, prev, this.update)
+        this.set(false, token, prev, this)
       }
     }
   }, this)
@@ -116,7 +115,7 @@ Observer.prototype.realize = function() {
 }
 
 // Updates the keypath. This is called when any intermediary key is changed.
-Observer.prototype.update = function() {
+Observer.prototype.sync = function() {
   var next, oldValue, newValue
 
   if ((next = this.realize()) !== this.target) {
@@ -131,9 +130,9 @@ Observer.prototype.update = function() {
     oldValue = this.value()
     this.target = next
     newValue = this.value()
-    if (newValue !== oldValue || newValue instanceof Function) this.callback()
+    if (newValue !== oldValue || newValue instanceof Function) this.callback.sync()
   } else if (next instanceof Array) {
-    this.callback()
+    this.callback.sync()
   }
 }
 
@@ -171,7 +170,7 @@ Observer.prototype.unobserve = function() {
 
   this.tokens.forEach(function(token, index) {
     if (obj = this.objectPath[index]) {
-      this.set(false, token, obj, this.update)
+      this.set(false, token, obj, this)
     }
   }, this)
 

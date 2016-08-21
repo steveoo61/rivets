@@ -56,7 +56,7 @@ const adapter = {
         if (weakmap[r]) {
           if (weakmap[r].callbacks[k] instanceof Array) {
             weakmap[r].callbacks[k].forEach(callback => {
-              callback()
+              callback.sync()
             })
           }
         }
@@ -141,7 +141,7 @@ const adapter = {
 
                 if (callbacks) {
                   callbacks.forEach(cb => {
-                      cb()
+                      cb.sync()
                   })
                 }
 

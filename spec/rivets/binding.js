@@ -77,7 +77,7 @@ describe('Rivets.Binding', function() {
     it('subscribes to the model for changes via the adapter', function() {
       sinon.spy(adapter, 'observe');
       binding.bind();
-      adapter.observe.calledWith(model, 'name', binding.sync).should.be.true
+      adapter.observe.calledWith(model, 'name', binding).should.be.true
     });
 
     it("calls the binder's bind method if one exists", function() {
@@ -110,8 +110,8 @@ describe('Rivets.Binding', function() {
 
       it('sets up observers on the dependant attributes', function() {
         binding.bind();
-        adapter.observe.calledWith(model, 'fname', binding.sync).should.be.true;
-        adapter.observe.calledWith(model, 'lname', binding.sync).should.be.true
+        adapter.observe.calledWith(model, 'fname', binding).should.be.true;
+        adapter.observe.calledWith(model, 'lname', binding).should.be.true
       })
     })
   });

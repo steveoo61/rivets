@@ -53,7 +53,7 @@ Data.prototype.alertCallbacks = function(key) {
 
   var key, callbacks;
   for(i in this.change[key]) {
-    this.change[key][i](this.get(key));
+    this.change[key][i].sync(this.get(key));
   }
 }
 

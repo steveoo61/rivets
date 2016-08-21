@@ -40,12 +40,11 @@ export class Binding {
     this.model = undefined
     this.binder = binder
     this.arg = arg
-    this.sync = this.sync.bind(this)
   }
 
   // Observes the object keypath to run the provided callback.
   observe(obj, keypath, callback) {
-    return new Observer(obj, keypath, callback)
+    return new Observer(obj, keypath, this)
   }
 
   parseTarget() {
