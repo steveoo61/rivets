@@ -35,7 +35,6 @@ export class Binding {
     this.type = type
     this.keypath = keypath
     this.options = options
-    this.formatters = options.formatters || []
     this.dependencies = []
     this.formatterObservers = {}
     this.model = undefined
@@ -90,7 +89,7 @@ export class Binding {
   // Applies all the current formatters to the supplied value and returns the
   // formatted value.
   formattedValue(value) {
-    this.formatters.forEach((formatterStr, fi) => {
+    this.options.formatters.forEach((formatterStr, fi) => {
       let args = formatterStr.match(/[^\s']+|'([^']|'[^\s])*'|"([^"]|"[^\s])*"/g)
       let id = args.shift()
       let formatter = this.view.options.formatters[id]
@@ -165,9 +164,9 @@ export class Binding {
     var value, lastformatterIndex;
     if (this.observer) {
       value = this.getValue(this.el)
-      lastformatterIndex = this.formatters.length - 1
+      lastformatterIndex = this.options.formatters.length - 1
 
-      this.formatters.slice(0).reverse().forEach((formatter, fiReversed) => {
+      this.options.formatters.slice(0).reverse().forEach((formatter, fiReversed) => {
         const fi = lastformatterIndex - fiReversed
         const args = formatter.split(/\s+/)
         const id = args.shift()
