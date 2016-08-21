@@ -13,26 +13,25 @@ const ARRAY_METHODS = [
 ]
 
 const adapter = {
-  id: '_rv',
   counter: 0,
   weakmap: {},
 
   weakReference: function(obj) {
-    if (!obj.hasOwnProperty(this.id)) {
+    if (!obj.hasOwnProperty('__rv')) {
       let id = this.counter++
 
-      Object.defineProperty(obj, this.id, {
+      Object.defineProperty(obj, '__rv', {
         value: id
       })
     }
 
-    if (!this.weakmap[obj[this.id]]) {
-      this.weakmap[obj[this.id]] = {
+    if (!this.weakmap[obj.__rv]) {
+      this.weakmap[obj.__rv] = {
         callbacks: {}
       }
     }
 
-    return this.weakmap[obj[this.id]]
+    return this.weakmap[obj.__rv]
   },
 
   cleanupWeakReference: function(ref, id) {
@@ -90,8 +89,8 @@ const adapter = {
   },
 
   unobserveMutations: function(obj, ref, keypath) {
-    if ((obj instanceof Array) && (obj[this.id] != null)) {
-      let map = this.weakmap[obj[this.id]]
+    if ((obj instanceof Array) && (obj.__rv != null)) {
+      let map = this.weakmap[obj.__rv]
 
       if (map) {
         let pointers = map.pointers[ref]
@@ -107,7 +106,7 @@ const adapter = {
             delete map.pointers[ref]
           }
 
-          this.cleanupWeakReference(map, obj[this.id])
+          this.cleanupWeakReference(map, obj.__rv)
         }
       }
     }
@@ -133,9 +132,9 @@ const adapter = {
 
           set: newValue => {
             if (newValue !== value) {
-              this.unobserveMutations(value, obj[this.id], keypath)
+              this.unobserveMutations(value, obj.__rv, keypath)
               value = newValue
-              let map = this.weakmap[obj[this.id]]
+              let map = this.weakmap[obj.__rv]
 
               if (map) {
                 let callbacks = map.callbacks[keypath]
@@ -146,7 +145,7 @@ const adapter = {
                   })
                 }
 
-                this.observeMutations(newValue, obj[this.id], keypath)
+                this.observeMutations(newValue, obj.__rv, keypath)
               }
             }
           }
@@ -158,11 +157,11 @@ const adapter = {
       callbacks[keypath].push(callback)
     }
 
-    this.observeMutations(obj[keypath], obj[this.id], keypath)
+    this.observeMutations(obj[keypath], obj.__rv, keypath)
   },
 
   unobserve: function(obj, keypath, callback) {
-    let map = this.weakmap[obj[this.id]]
+    let map = this.weakmap[obj.__rv]
 
     if (map) {
       let callbacks = map.callbacks[keypath]
@@ -175,11 +174,11 @@ const adapter = {
 
           if (!callbacks.length) {
             delete map.callbacks[keypath]
-            this.unobserveMutations(obj[keypath], obj[this.id], keypath)
+            this.unobserveMutations(obj[keypath], obj.__rv, keypath)
           }
         }
 
-        this.cleanupWeakReference(map, obj[this.id])
+        this.cleanupWeakReference(map, obj.__rv)
       }
     }
   },
