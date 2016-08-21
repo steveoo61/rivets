@@ -11,7 +11,7 @@ function error(message) {
 
 var adapters
 var interfaces
-var root
+var rootInterface
 
 // Constructs a new keypath observer and kicks things off.
 function Observer(obj, keypath, callback) {
@@ -30,7 +30,7 @@ function Observer(obj, keypath, callback) {
 Observer.updateOptions = function(options) {
   adapters = options.adapters
   interfaces = Object.keys(adapters)
-  root = options.rootInterface
+  rootInterface = options.rootInterface
 }
 
 // Tokenizes the provided keypath string into interface + path tokens for the
@@ -58,7 +58,7 @@ Observer.tokenize = function(keypath, root) {
 // Parses the keypath using the interfaces defined on the view. Sets variables
 // for the tokenized keypath as well as the end key.
 Observer.prototype.parse = function() {
-  var path
+  var path, root
 
   if (!interfaces.length) {
     error('Must define at least one adapter interface.')
@@ -68,6 +68,7 @@ Observer.prototype.parse = function() {
     root = this.keypath[0]
     path = this.keypath.substr(1)
   } else {
+    root = rootInterface
     path = this.keypath
   }
 
