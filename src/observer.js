@@ -81,8 +81,10 @@ Observer.prototype.realize = function() {
   var current = this.obj
   var unreached = false
   var prev
+  var token
 
-  this.tokens.forEach(function(token, index) {
+  for (let index = 0; index < this.tokens.length; index++) {
+    token = this.tokens[index]
     if (isObject(current)) {
       if (typeof this.objectPath[index] !== 'undefined') {
         if (current !== (prev = this.objectPath[index])) {
@@ -105,7 +107,7 @@ Observer.prototype.realize = function() {
         this.set(false, token, prev, this)
       }
     }
-  }, this)
+  }
 
   if (unreached !== false) {
     this.objectPath.splice(unreached)
@@ -167,12 +169,14 @@ Observer.prototype.set = function(active, key, obj, callback) {
 // Unobserves the entire keypath.
 Observer.prototype.unobserve = function() {
   var obj
+  var token
 
-  this.tokens.forEach(function(token, index) {
+  for (let index = 0; index < this.tokens.length; index++) {
+    token = this.tokens[index]
     if (obj = this.objectPath[index]) {
       this.set(false, token, obj, this)
     }
-  }, this)
+  }
 
   if (isObject(this.target)) {
     this.set(false, this.key, this.target, this.callback)
