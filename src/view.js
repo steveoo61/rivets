@@ -45,6 +45,10 @@ const bindingComparator = (a, b) => {
   return bPriority - aPriority
 }
 
+const trimStr = (str) => {
+  return str.trim()
+}
+
 // A collection of bindings built from a set of parent nodes.
 export default class View {
   // The DOM elements and the model objects for binding are passed into the
@@ -65,13 +69,9 @@ export default class View {
 
 
   buildBinding(node, type, declaration, binder, arg) {
-    let pipes = declaration.match(/((?:'[^']*')*(?:(?:[^\|']*(?:'[^']*')+[^\|']*)+|[^\|]+))|^$/g).map(pipe => {
-      return pipe.trim()
-    })
+    let pipes = declaration.match(/((?:'[^']*')*(?:(?:[^\|']*(?:'[^']*')+[^\|']*)+|[^\|]+))|^$/g).map(trimStr)
 
-    let context = pipes.shift().split('<').map(ctx => {
-      return ctx.trim()
-    })
+    let context = pipes.shift().split('<').map(trimStr)
 
     let keypath = context.shift()
     let dependencies = context.shift()
