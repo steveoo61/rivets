@@ -58,310 +58,96 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["default"] : obj; };
 
-	var sightglass = _interopRequire(__webpack_require__(1));
+	var rivets = _interopRequire(__webpack_require__(1));
 
-	var rivets = _interopRequire(__webpack_require__(2));
+	var View = _interopRequire(__webpack_require__(3));
 
-	var View = _interopRequire(__webpack_require__(4));
+	var _constants = __webpack_require__(2);
 
-	var adapter = _interopRequire(__webpack_require__(8));
+	var OPTIONS = _constants.OPTIONS;
+	var EXTENSIONS = _constants.EXTENSIONS;
 
-	var binders = _interopRequire(__webpack_require__(9));
+	var adapter = _interopRequire(__webpack_require__(7));
 
-	// Module factory. Integrates sightglass and public API methods. Returns the
-	// public interface.
-	var factory = function (sightglass) {
-	  rivets.sightglass = sightglass;
-	  rivets.binders = binders;
-	  rivets.adapters["."] = adapter;
+	var binders = _interopRequire(__webpack_require__(8));
 
-	  // Binds some data to a template / element. Retuddrns a Rivets.View instance.
-	  rivets.bind = function (el) {
-	    var models = arguments[1] === undefined ? {} : arguments[1];
-	    var options = arguments[2] === undefined ? {} : arguments[2];
+	var Observer = _interopRequire(__webpack_require__(6));
 
-	    var view = new View(el, models, options);
-	    view.bind();
-	    return view;
-	  };
+	// Returns the public interface.
 
-	  // Initializes a new instance of a component on the specified element and
-	  // returns a Rivets.View instance.
-	  rivets.init = function (component, el) {
-	    var data = arguments[2] === undefined ? {} : arguments[2];
+	rivets.binders = binders;
+	rivets.adapters["."] = adapter;
 
-	    if (!el) {
-	      el = document.createElement("div");
+	// Binds some data to a template / element. Returns a Rivets.View instance.
+	rivets.bind = function (el, models, options) {
+	  var viewOptions = {};
+	  models = models || {};
+	  options = options || {};
+
+	  EXTENSIONS.forEach(function (extensionType) {
+	    viewOptions[extensionType] = Object.create(null);
+
+	    if (options[extensionType]) {
+	      Object.keys(options[extensionType]).forEach(function (key) {
+	        viewOptions[extensionType][key] = options[extensionType][key];
+	      });
 	    }
 
-	    var component = rivets.components[component];
-	    el.innerHTML = component.template.call(rivets, el);
-	    var scope = component.initialize.call(rivets, el, data);
+	    Object.keys(rivets[extensionType]).forEach(function (key) {
+	      if (!viewOptions[extensionType][key]) {
+	        viewOptions[extensionType][key] = rivets[extensionType][key];
+	      }
+	    });
+	  });
 
-	    var view = new View(el, scope);
-	    view.bind();
-	    return view;
-	  };
+	  OPTIONS.forEach(function (option) {
+	    var value = options[option];
+	    viewOptions[option] = value != null ? value : rivets[option];
+	  });
 
-	  return rivets;
+	  viewOptions.starBinders = Object.keys(viewOptions.binders).filter(function (key) {
+	    return key.indexOf("*") > 0;
+	  });
+
+	  Observer.updateOptions(viewOptions);
+
+	  var view = new View(el, models, viewOptions);
+	  view.bind();
+	  return view;
 	};
 
-	module.exports = factory(sightglass);
+	// Initializes a new instance of a component on the specified element and
+	// returns a Rivets.View instance.
+	rivets.init = function (component, el) {
+	  var data = arguments[2] === undefined ? {} : arguments[2];
+
+	  if (!el) {
+	    el = document.createElement("div");
+	  }
+
+	  var component = rivets.components[component];
+	  el.innerHTML = component.template.call(rivets, el);
+	  var scope = component.initialize.call(rivets, el, data);
+
+	  var view = rivets.bind(el, scope);
+	  view.bind();
+	  return view;
+	};
+
+	module.exports = rivets;
 
 /***/ },
 /* 1 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;"use strict";
-
-	(function () {
-	  // Public sightglass interface.
-	  function sightglass(obj, keypath, callback, options) {
-	    return new Observer(obj, keypath, callback, options);
-	  }
-
-	  // Batteries not included.
-	  sightglass.adapters = {};
-
-	  // Constructs a new keypath observer and kicks things off.
-	  function Observer(obj, keypath, callback, options) {
-	    this.options = options || {};
-	    this.options.adapters = this.options.adapters || {};
-	    this.keypath = keypath;
-	    this.callback = callback;
-	    this.objectPath = [];
-	    this.update = this.update.bind(this);
-	    this.parse();
-	    this.obj = this.getRootObject(obj);
-
-	    if (isObject(this.target = this.realize())) {
-	      this.set(true, this.key, this.target, this.callback);
-	    }
-	  }
-
-	  // Tokenizes the provided keypath string into interface + path tokens for the
-	  // observer to work with.
-	  Observer.tokenize = function (keypath, interfaces, root) {
-	    var tokens = [];
-	    var current = { i: root, path: "" };
-	    var index, chr;
-
-	    for (index = 0; index < keypath.length; index++) {
-	      chr = keypath.charAt(index);
-
-	      if (!! ~interfaces.indexOf(chr)) {
-	        tokens.push(current);
-	        current = { i: chr, path: "" };
-	      } else {
-	        current.path += chr;
-	      }
-	    }
-
-	    tokens.push(current);
-	    return tokens;
-	  };
-
-	  // Parses the keypath using the interfaces defined on the view. Sets variables
-	  // for the tokenized keypath as well as the end key.
-	  Observer.prototype.parse = function () {
-	    var interfaces = this.interfaces();
-	    var root, path;
-
-	    if (!interfaces.length) {
-	      error("Must define at least one adapter interface.");
-	    }
-
-	    if (!! ~interfaces.indexOf(this.keypath[0])) {
-	      root = this.keypath[0];
-	      path = this.keypath.substr(1);
-	    } else {
-	      if (typeof (root = this.options.root || sightglass.root) === "undefined") {
-	        error("Must define a default root adapter.");
-	      }
-
-	      path = this.keypath;
-	    }
-
-	    this.tokens = Observer.tokenize(path, interfaces, root);
-	    this.key = this.tokens.pop();
-	  };
-
-	  // Realizes the full keypath, attaching observers for every key and correcting
-	  // old observers to any changed objects in the keypath.
-	  Observer.prototype.realize = function () {
-	    var current = this.obj;
-	    var unreached = false;
-	    var prev;
-
-	    this.tokens.forEach(function (token, index) {
-	      if (isObject(current)) {
-	        if (typeof this.objectPath[index] !== "undefined") {
-	          if (current !== (prev = this.objectPath[index])) {
-	            this.set(false, token, prev, this.update);
-	            this.set(true, token, current, this.update);
-	            this.objectPath[index] = current;
-	          }
-	        } else {
-	          this.set(true, token, current, this.update);
-	          this.objectPath[index] = current;
-	        }
-
-	        current = this.get(token, current);
-	      } else {
-	        if (unreached === false) {
-	          unreached = index;
-	        }
-
-	        if (prev = this.objectPath[index]) {
-	          this.set(false, token, prev, this.update);
-	        }
-	      }
-	    }, this);
-
-	    if (unreached !== false) {
-	      this.objectPath.splice(unreached);
-	    }
-
-	    return current;
-	  };
-
-	  // Updates the keypath. This is called when any intermediary key is changed.
-	  Observer.prototype.update = function () {
-	    var next, oldValue, newValue;
-
-	    if ((next = this.realize()) !== this.target) {
-	      if (isObject(this.target)) {
-	        this.set(false, this.key, this.target, this.callback);
-	      }
-
-	      if (isObject(next)) {
-	        this.set(true, this.key, next, this.callback);
-	      }
-
-	      oldValue = this.value();
-	      this.target = next;
-	      newValue = this.value();
-	      if (newValue !== oldValue || newValue instanceof Function) this.callback();
-	    } else if (next instanceof Array) {
-	      this.callback();
-	    }
-	  };
-
-	  // Reads the current end value of the observed keypath. Returns undefined if
-	  // the full keypath is unreachable.
-	  Observer.prototype.value = function () {
-	    if (isObject(this.target)) {
-	      return this.get(this.key, this.target);
-	    }
-	  };
-
-	  // Sets the current end value of the observed keypath. Calling setValue when
-	  // the full keypath is unreachable is a no-op.
-	  Observer.prototype.setValue = function (value) {
-	    if (isObject(this.target)) {
-	      this.adapter(this.key).set(this.target, this.key.path, value);
-	    }
-	  };
-
-	  // Gets the provided key on an object.
-	  Observer.prototype.get = function (key, obj) {
-	    return this.adapter(key).get(obj, key.path);
-	  };
-
-	  // Observes or unobserves a callback on the object using the provided key.
-	  Observer.prototype.set = function (active, key, obj, callback) {
-	    var action = active ? "observe" : "unobserve";
-	    this.adapter(key)[action](obj, key.path, callback);
-	  };
-
-	  // Returns an array of all unique adapter interfaces available.
-	  Observer.prototype.interfaces = function () {
-	    var interfaces = Object.keys(this.options.adapters);
-
-	    Object.keys(sightglass.adapters).forEach(function (i) {
-	      if (! ~interfaces.indexOf(i)) {
-	        interfaces.push(i);
-	      }
-	    });
-
-	    return interfaces;
-	  };
-
-	  // Convenience function to grab the adapter for a specific key.
-	  Observer.prototype.adapter = function (key) {
-	    return this.options.adapters[key.i] || sightglass.adapters[key.i];
-	  };
-
-	  // Unobserves the entire keypath.
-	  Observer.prototype.unobserve = function () {
-	    var obj;
-
-	    this.tokens.forEach(function (token, index) {
-	      if (obj = this.objectPath[index]) {
-	        this.set(false, token, obj, this.update);
-	      }
-	    }, this);
-
-	    if (isObject(this.target)) {
-	      this.set(false, this.key, this.target, this.callback);
-	    }
-	  };
-	  // traverse the scope chain to find the scope which has the root property
-	  // if the property is not found in chain, returns the root scope
-	  Observer.prototype.getRootObject = function (obj) {
-	    var rootProp, current;
-	    if (!obj.$parent) {
-	      return obj;
-	    }
-
-	    if (this.tokens.length) {
-	      rootProp = this.tokens[0].path;
-	    } else {
-	      rootProp = this.key.path;
-	    }
-
-	    current = obj;
-	    while (current.$parent && current[rootProp] === undefined) {
-	      current = current.$parent;
-	    }
-
-	    return current;
-	  };
-
-	  // Check if a value is an object than can be observed.
-	  function isObject(obj) {
-	    return typeof obj === "object" && obj !== null;
-	  }
-
-	  // Error thrower.
-	  function error(message) {
-	    throw new Error("[sightglass] " + message);
-	  }
-
-	  // Export module for Node and the browser.
-	  if (typeof module !== "undefined" && module.exports) {
-	    module.exports = sightglass;
-	  } else if (true) {
-	    !(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_RESULT__ = function () {
-	      return this.sightglass = sightglass;
-	    }.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-	  } else {
-	    this.sightglass = sightglass;
-	  }
-	}).call(undefined);
-
-/***/ },
-/* 2 */
-/***/ function(module, exports, __webpack_require__) {
-
 	"use strict";
 
-	var _constants = __webpack_require__(3);
+	var _constants = __webpack_require__(2);
 
 	var OPTIONS = _constants.OPTIONS;
 	var EXTENSIONS = _constants.EXTENSIONS;
 
-	var rivets = {
+	var rivets = Object.defineProperties({
 	  // Global binders.
 	  binders: {},
 
@@ -375,7 +161,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	  adapters: {},
 
 	  // Default attribute prefix.
-	  prefix: "rv",
+	  _prefix: "rv",
+
+	  _fullPrefix: "rv-",
 
 	  // Default template delimiters.
 	  templateDelimiters: ["{", "}"],
@@ -391,12 +179,23 @@ return /******/ (function(modules) { // webpackBootstrap
 	    this.call(context, ev, binding.view.models);
 	  },
 
+	  // Sets the attribute on the element. If no binder above is matched it will fall
+	  // back to using this binder.
+	  fallbackBinder: function fallbackBinder(el, value) {
+	    if (value != null) {
+	      el.setAttribute(this.type, value);
+	    } else {
+	      el.removeAttribute(this.type);
+	    }
+	  },
+
 	  // Merges an object literal into the corresponding global options.
-	  configure: function configure() {
+	  configure: function configure(options) {
 	    var _this = this;
 
-	    var options = arguments[0] === undefined ? {} : arguments[0];
-
+	    if (!options) {
+	      return;
+	    }
 	    Object.keys(options).forEach(function (option) {
 	      var value = options[option];
 
@@ -409,12 +208,24 @@ return /******/ (function(modules) { // webpackBootstrap
 	      }
 	    });
 	  }
-	};
+	}, {
+	  prefix: {
+	    get: function () {
+	      return this._prefix;
+	    },
+	    set: function (value) {
+	      this._prefix = value;
+	      this._fullPrefix = value + "-";
+	    },
+	    configurable: true,
+	    enumerable: true
+	  }
+	});
 
 	module.exports = rivets;
 
 /***/ },
-/* 3 */
+/* 2 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -429,7 +240,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.EXTENSIONS = EXTENSIONS;
 
 /***/ },
-/* 4 */
+/* 3 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -440,23 +251,60 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
 
-	var rivets = _interopRequire(__webpack_require__(2));
+	var rivets = _interopRequire(__webpack_require__(1));
 
-	var _constants = __webpack_require__(3);
-
-	var OPTIONS = _constants.OPTIONS;
-	var EXTENSIONS = _constants.EXTENSIONS;
-
-	var _bindings = __webpack_require__(5);
+	var _bindings = __webpack_require__(4);
 
 	var Binding = _bindings.Binding;
-	var TextBinding = _bindings.TextBinding;
 	var ComponentBinding = _bindings.ComponentBinding;
 
-	var parseTemplate = __webpack_require__(6).parseTemplate;
+	var parseTemplate = __webpack_require__(5).parseTemplate;
 
-	var defined = function (value) {
-	  return value !== undefined && value !== null;
+	var textBinder = {
+	  routine: function (node, value) {
+	    node.data = value != null ? value : "";
+	  }
+	};
+
+	var parseNode = function (view, node) {
+	  var block = false;
+
+	  if (node.nodeType === 3) {
+	    var tokens = parseTemplate(node.data, rivets.templateDelimiters);
+
+	    if (tokens) {
+	      for (var i = 0; i < tokens.length; i++) {
+	        var token = tokens[i];
+	        var text = document.createTextNode(token.value);
+	        node.parentNode.insertBefore(text, node);
+
+	        if (token.type === 1) {
+	          view.buildBinding(text, null, token.value, textBinder, null);
+	        }
+	      }
+
+	      node.parentNode.removeChild(node);
+	    }
+	    block = true;
+	  } else if (node.nodeType === 1) {
+	    block = view.traverse(node);
+	  }
+
+	  if (!block) {
+	    for (var i = 0; i < node.childNodes.length; i++) {
+	      parseNode(view, node.childNodes[i]);
+	    }
+	  }
+	};
+
+	var bindingComparator = function (a, b) {
+	  var aPriority = a.binder ? a.binder.priority || 0 : 0;
+	  var bPriority = b.binder ? b.binder.priority || 0 : 0;
+	  return bPriority - aPriority;
+	};
+
+	var trimStr = function (str) {
+	  return str.trim();
 	};
 
 	// A collection of bindings built from a set of parent nodes.
@@ -466,11 +314,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  // constructor along with any local options that should be used throughout the
 	  // context of the view and it's bindings.
 
-	  function View(els, models) {
-	    var _this = this;
-
-	    var options = arguments[2] === undefined ? {} : arguments[2];
-
+	  function View(els, models, options) {
 	    _classCallCheck(this, View);
 
 	    if (els.jquery || els instanceof Array) {
@@ -480,61 +324,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 
 	    this.models = models;
-
-	    EXTENSIONS.forEach(function (extensionType) {
-	      _this[extensionType] = {};
-
-	      if (options[extensionType]) {
-	        Object.keys(options[extensionType]).forEach(function (key) {
-	          _this[extensionType][key] = options[extensionType][key];
-	        });
-	      }
-
-	      Object.keys(rivets[extensionType]).forEach(function (key) {
-	        if (!defined(_this[extensionType][key])) {
-	          _this[extensionType][key] = rivets[extensionType][key];
-	        }
-	      });
-	    });
-
-	    OPTIONS.forEach(function (option) {
-	      _this[option] = defined(options[option]) ? options[option] : rivets[option];
-	    });
+	    this.options = options;
 
 	    this.build();
 	  }
 
 	  _createClass(View, {
-	    options: {
-	      value: function options() {
-	        var _this = this;
-
-	        var options = {};
-
-	        EXTENSIONS.concat(OPTIONS).forEach(function (option) {
-	          options[option] = _this[option];
-	        });
-
-	        return options;
-	      }
-	    },
-	    bindingRegExp: {
-
-	      // Regular expression used to match binding attributes.
-
-	      value: function bindingRegExp() {
-	        return new RegExp("^" + this.prefix + "-");
-	      }
-	    },
 	    buildBinding: {
-	      value: function buildBinding(binding, node, type, declaration) {
-	        var pipes = declaration.match(/((?:'[^']*')*(?:(?:[^\|']*(?:'[^']*')+[^\|']*)+|[^\|]+))|^$/g).map(function (pipe) {
-	          return pipe.trim();
-	        });
+	      value: function buildBinding(node, type, declaration, binder, arg) {
+	        var pipes = declaration.match(/((?:'[^']*')*(?:(?:[^\|']*(?:'[^']*')+[^\|']*)+|[^\|]+))|^$/g).map(trimStr);
 
-	        var context = pipes.shift().split("<").map(function (ctx) {
-	          return ctx.trim();
-	        });
+	        var context = pipes.shift().split("<").map(trimStr);
 
 	        var keypath = context.shift();
 	        var dependencies = context.shift();
@@ -544,7 +344,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	          options.dependencies = dependencies.split(/\s+/);
 	        }
 
-	        this.bindings.push(new binding(this, node, type, keypath, options));
+	        this.bindings.push(new Binding(this, node, type, keypath, binder, arg, options));
 	      }
 	    },
 	    build: {
@@ -553,127 +353,73 @@ return /******/ (function(modules) { // webpackBootstrap
 	      // binding declaration.
 
 	      value: function build() {
-	        var _this = this;
-
 	        this.bindings = [];
-
-	        var parse = function (node) {
-	          var block = false;
-
-	          if (node.nodeType === 3) {
-	            var delimiters = _this.templateDelimiters;
-
-	            if (delimiters) {
-	              var tokens = parseTemplate(node.data, delimiters);
-
-	              if (tokens.length) {
-	                if (!(tokens.length === 1 && tokens[0].type === 0)) {
-	                  tokens.forEach(function (token) {
-	                    var text = document.createTextNode(token.value);
-	                    node.parentNode.insertBefore(text, node);
-
-	                    if (token.type === 1) {
-	                      _this.buildBinding(TextBinding, text, null, token.value);
-	                    }
-	                  });
-
-	                  node.parentNode.removeChild(node);
-	                }
-	              }
-	            }
-	          } else if (node.nodeType === 1) {
-	            block = _this.traverse(node);
-	          }
-
-	          if (!block) {
-	            Array.prototype.slice.call(node.childNodes).forEach(parse);
-	          }
-	        };
 
 	        var elements = this.els,
 	            i = undefined,
 	            len = undefined;
 	        for (i = 0, len = elements.length; i < len; i++) {
-	          parse(elements[i]);
+	          parseNode(this, elements[i]);
 	        }
 
-	        this.bindings.sort(function (a, b) {
-	          var aPriority = defined(a.binder) ? a.binder.priority || 0 : 0;
-	          var bPriority = defined(b.binder) ? b.binder.priority || 0 : 0;
-	          return bPriority - aPriority;
-	        });
+	        this.bindings.sort(bindingComparator);
 	      }
 	    },
 	    traverse: {
 	      value: function traverse(node) {
-	        var _this = this;
-
-	        var bindingRegExp = this.bindingRegExp();
+	        var bindingPrefix = rivets._fullPrefix;
 	        var block = node.nodeName === "SCRIPT" || node.nodeName === "STYLE";
-	        var nodeAttributes = node.attributes;
-	        var attributes = undefined,
-	            type = undefined,
-	            binder = undefined;
-
-	        for (var i = 0, len = nodeAttributes.length; i < len; i++) {
-	          var attribute = nodeAttributes[i];
-	          if (bindingRegExp.test(attribute.name)) {
-	            type = attribute.name.replace(bindingRegExp, "");
-	            binder = this.binders[type];
-
-	            if (!binder) {
-	              Object.keys(this.binders).forEach(function (identifier) {
-	                var value = _this.binders[identifier];
-
-	                if (identifier !== "*" && identifier.indexOf("*") > -1) {
-	                  var regexp = new RegExp("^" + identifier.replace(/\*/g, ".+") + "$");
-
-	                  if (regexp.test(type)) {
-	                    binder = value;
-	                  }
-	                }
-	              });
-	            }
-
-	            if (!defined(binder)) {
-	              binder = this.binders["*"];
-	            }
-
-	            if (binder.block) {
-	              block = true;
-	              attributes = [attribute];
-	            }
-	          }
-	        }
-
-	        attributes = attributes || nodeAttributes;
+	        var attributes = node.attributes;
+	        var bindInfos = [];
+	        var starBinders = this.options.starBinders;
+	        var type, binder, identifier, arg;
 
 	        for (var i = 0, len = attributes.length; i < len; i++) {
 	          var attribute = attributes[i];
-	          if (bindingRegExp.test(attribute.name)) {
-	            var _type = attribute.name.replace(bindingRegExp, "");
-	            this.buildBinding(Binding, node, _type, attribute.value);
+	          if (attribute.name.indexOf(bindingPrefix) === 0) {
+	            type = attribute.name.slice(bindingPrefix.length);
+	            binder = this.options.binders[type];
+	            arg = undefined;
+
+	            if (!binder) {
+	              for (var k = 0; k < starBinders.length; k++) {
+	                identifier = starBinders[k];
+	                if (type.slice(0, identifier.length - 1) === identifier.slice(0, -1)) {
+	                  binder = this.options.binders[identifier];
+	                  arg = type.slice(identifier.length - 1);
+	                  break;
+	                }
+	              }
+	            }
+
+	            if (!binder) {
+	              binder = rivets.fallbackBinder;
+	            }
+
+	            if (binder.block) {
+	              this.buildBinding(node, type, attribute.value, binder, arg);
+	              return true;
+	            }
+
+	            bindInfos.push({ attr: attribute, binder: binder, type: type, arg: arg });
 	          }
 	        }
 
-	        if (!block) {
-	          var _type2 = node.nodeName.toLowerCase();
+	        for (var i = 0; i < bindInfos.length; i++) {
+	          var bindInfo = bindInfos[i];
+	          this.buildBinding(node, bindInfo.type, bindInfo.attr.value, bindInfo.binder, bindInfo.arg);
+	        }
 
-	          if (this.components[_type2] && !node._bound) {
-	            this.bindings.push(new ComponentBinding(this, node, _type2));
+	        if (!block) {
+	          var _type = node.nodeName.toLowerCase();
+
+	          if (this.options.components[_type] && !node._bound) {
+	            this.bindings.push(new ComponentBinding(this, node, _type));
 	            block = true;
 	          }
 	        }
 
 	        return block;
-	      }
-	    },
-	    select: {
-
-	      // Returns an array of bindings where the supplied function evaluates to true.
-
-	      value: function select(fn) {
-	        return this.bindings.filter(fn);
 	      }
 	    },
 	    bind: {
@@ -711,14 +457,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	      // Publishes the input values from the view back to the model (reverse sync).
 
 	      value: function publish() {
-	        var publishes = this.select(function (binding) {
-	          if (defined(binding.binder)) {
-	            return binding.binder.publishes;
+	        this.bindings.forEach(function (binding) {
+	          if (binding.binder && binding.binder.publishes) {
+	            binding.publish();
 	          }
-	        });
-
-	        publishes.forEach(function (binding) {
-	          binding.publish();
 	        });
 	      }
 	    },
@@ -736,7 +478,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        });
 
 	        this.bindings.forEach(function (binding) {
-	          if (defined(binding.update)) {
+	          if (binding.update) {
 	            binding.update(models);
 	          }
 	        });
@@ -750,7 +492,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = View;
 
 /***/ },
-/* 5 */
+/* 4 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -769,23 +511,37 @@ return /******/ (function(modules) { // webpackBootstrap
 	  value: true
 	});
 
-	var rivets = _interopRequire(__webpack_require__(2));
+	var rivets = _interopRequire(__webpack_require__(1));
 
-	var parseType = __webpack_require__(6).parseType;
+	var parseType = __webpack_require__(5).parseType;
 
-	var getInputValue = __webpack_require__(7).getInputValue;
-
-	var _constants = __webpack_require__(3);
+	var _constants = __webpack_require__(2);
 
 	var EXTENSIONS = _constants.EXTENSIONS;
 	var OPTIONS = _constants.OPTIONS;
 
+	var Observer = _interopRequire(__webpack_require__(6));
+
 	//there's a cyclic dependency that makes imported View a dummy object
 	//import View from './view'
 
-	var defined = function (value) {
-	  return value !== undefined && value !== null;
-	};
+	function getInputValue(el) {
+	  var results = [];
+	  if (el.type === "checkbox") {
+	    return el.checked;
+	  } else if (el.type === "select-multiple") {
+
+	    el.options.forEach(function (option) {
+	      if (option.selected) {
+	        results.push(option.value);
+	      }
+	    });
+
+	    return results;
+	  } else {
+	    return el.value;
+	  }
+	}
 
 	// A single binding between a model attribute and a DOM element.
 
@@ -794,9 +550,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  // containing view, the DOM node, the type of binding, the model object and the
 	  // keypath at which to listen for changes.
 
-	  function Binding(view, el, type, keypath) {
-	    var options = arguments[4] === undefined ? {} : arguments[4];
-
+	  function Binding(view, el, type, keypath, binder, arg, options) {
 	    _classCallCheck(this, Binding);
 
 	    this.view = view;
@@ -804,59 +558,20 @@ return /******/ (function(modules) { // webpackBootstrap
 	    this.type = type;
 	    this.keypath = keypath;
 	    this.options = options;
-	    this.formatters = options.formatters || [];
 	    this.dependencies = [];
 	    this.formatterObservers = {};
 	    this.model = undefined;
-	    this.setBinder();
-
-	    this.sync = this.sync.bind(this);
+	    this.binder = binder;
+	    this.arg = arg;
 	  }
 
 	  _createClass(Binding, {
-	    setBinder: {
-
-	      // Sets the binder to use when binding and syncing.
-
-	      value: function setBinder() {
-	        var _this = this;
-
-	        this.binder = this.view.binders[this.type];
-
-	        if (!this.binder) {
-	          Object.keys(this.view.binders).forEach(function (identifier) {
-	            var value = _this.view.binders[identifier];
-
-	            if (identifier !== "*" && identifier.indexOf("*") > -1) {
-	              var regexp = new RegExp("^" + identifier.replace(/\*/g, ".+") + "$");
-
-	              if (regexp.test(_this.type)) {
-	                _this.binder = value;
-	                _this.args = new RegExp("^" + identifier.replace(/\*/g, "(.+)") + "$").exec(_this.type);
-	                _this.args.shift();
-	              }
-	            }
-	          });
-	        }
-
-	        if (!defined(this.binder)) {
-	          this.binder = this.view.binders["*"];
-	        }
-
-	        if (this.binder instanceof Function) {
-	          this.binder = { routine: this.binder };
-	        }
-	      }
-	    },
 	    observe: {
 
 	      // Observes the object keypath to run the provided callback.
 
 	      value: function observe(obj, keypath, callback) {
-	        return rivets.sightglass(obj, keypath, callback, {
-	          root: this.view.rootInterface,
-	          adapters: this.view.adapters
-	        });
+	        return new Observer(obj, keypath, this);
 	      }
 	    },
 	    parseTarget: {
@@ -886,7 +601,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	          if (type === 0) {
 	            return value;
 	          } else {
-	            if (!defined(_this.formatterObservers[formatterIndex])) {
+	            if (!_this.formatterObservers[formatterIndex]) {
 	              _this.formatterObservers[formatterIndex] = {};
 	            }
 
@@ -910,10 +625,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	      value: function formattedValue(value) {
 	        var _this = this;
 
-	        this.formatters.forEach(function (formatterStr, fi) {
+	        this.options.formatters.forEach(function (formatterStr, fi) {
 	          var args = formatterStr.match(/[^\s']+|'([^']|'[^\s])*'|"([^"]|"[^\s])*"/g);
 	          var id = args.shift();
-	          var formatter = _this.view.formatters[id];
+	          var formatter = _this.view.options.formatters[id];
 
 	          var processedArgs = _this.parseFormatterArguments(args, fi);
 
@@ -933,7 +648,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	      value: function eventHandler(fn) {
 	        var binding = this;
-	        var handler = binding.view.handler;
+	        var handler = binding.view.options.handler;
 
 	        return function (ev) {
 	          handler.call(fn, this, ev, binding);
@@ -943,7 +658,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    set: {
 
 	      // Sets the value for the binding. This Basically just runs the binding routine
-	      // with the suplied value formatted.
+	      // with the supplied value formatted.
 
 	      value: function set(value) {
 	        if (value instanceof Function && !this.binder["function"]) {
@@ -952,8 +667,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	          value = this.formattedValue(value);
 	        }
 
-	        if (this.binder.routine) {
-	          this.binder.routine.call(this, this.el, value);
+	        var routineFn = this.binder.routine || this.binder;
+
+	        if (routineFn instanceof Function) {
+	          routineFn.call(this, this.el, value);
 	        }
 	      }
 	    },
@@ -975,7 +692,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            this.dependencies = [];
 	            this.model = this.observer.target;
 
-	            if (defined(this.model) && deps && deps.length) {
+	            if (this.model && deps && deps.length) {
 	              deps.forEach(function (dependency) {
 	                var observer = _this.observe(_this.model, dependency, _this.sync);
 	                _this.dependencies.push(observer);
@@ -996,26 +713,24 @@ return /******/ (function(modules) { // webpackBootstrap
 	      value: function publish() {
 	        var _this = this;
 
-	        var value = undefined;
+	        var value, lastformatterIndex;
 	        if (this.observer) {
-	          (function () {
-	            value = _this.getValue(_this.el);
-	            var lastformatterIndex = _this.formatters.length - 1;
+	          value = this.getValue(this.el);
+	          lastformatterIndex = this.options.formatters.length - 1;
 
-	            _this.formatters.slice(0).reverse().forEach(function (formatter, fiReversed) {
-	              var fi = lastformatterIndex - fiReversed;
-	              var args = formatter.split(/\s+/);
-	              var id = args.shift();
-	              var f = _this.view.formatters[id];
-	              var processedArgs = _this.parseFormatterArguments(args, fi);
+	          this.options.formatters.slice(0).reverse().forEach(function (formatter, fiReversed) {
+	            var fi = lastformatterIndex - fiReversed;
+	            var args = formatter.split(/\s+/);
+	            var id = args.shift();
+	            var f = _this.view.options.formatters[id];
+	            var processedArgs = _this.parseFormatterArguments(args, fi);
 
-	              if (defined(f) && f.publish) {
-	                value = f.publish.apply(f, [value].concat(_toConsumableArray(processedArgs)));
-	              }
-	            });
+	            if (f && f.publish) {
+	              value = f.publish.apply(f, [value].concat(_toConsumableArray(processedArgs)));
+	            }
+	          });
 
-	            _this.observer.setValue(value);
-	          })();
+	          this.observer.setValue(value);
 	        }
 	      }
 	    },
@@ -1030,18 +745,18 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	        this.parseTarget();
 
-	        if (defined(this.binder.bind)) {
+	        if (this.binder.hasOwnProperty("bind")) {
 	          this.binder.bind.call(this, this.el);
 	        }
 
-	        if (defined(this.model) && defined(this.options.dependencies)) {
+	        if (this.model && this.options.dependencies) {
 	          this.options.dependencies.forEach(function (dependency) {
 	            var observer = _this.observe(_this.model, dependency, _this.sync);
 	            _this.dependencies.push(observer);
 	          });
 	        }
 
-	        if (this.view.preloadData) {
+	        if (this.view.options.preloadData) {
 	          this.sync();
 	        }
 	      }
@@ -1053,11 +768,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	      value: function unbind() {
 	        var _this = this;
 
-	        if (defined(this.binder.unbind)) {
+	        if (this.binder.unbind) {
 	          this.binder.unbind.call(this, this.el);
 	        }
 
-	        if (defined(this.observer)) {
+	        if (this.observer) {
 	          this.observer.unobserve();
 	        }
 
@@ -1086,11 +801,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	      value: function update() {
 	        var models = arguments[0] === undefined ? {} : arguments[0];
 
-	        if (defined(this.observer)) {
+	        if (this.observer) {
 	          this.model = this.observer.target;
 	        }
 
-	        if (defined(this.binder.update)) {
+	        if (this.binder.update) {
 	          this.binder.update.call(this, models);
 	        }
 	      }
@@ -1100,7 +815,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      // Returns elements value
 
 	      value: function getValue(el) {
-	        if (this.binder && defined(this.binder.getValue)) {
+	        if (this.binder && this.binder.getValue) {
 	          return this.binder.getValue.call(this, el);
 	        } else {
 	          return getInputValue(el);
@@ -1125,16 +840,16 @@ return /******/ (function(modules) { // webpackBootstrap
 	    this.view = view;
 	    this.el = el;
 	    this.type = type;
-	    this.component = this.view.components[this.type];
+	    this.component = view.options.components[this.type];
 	    this["static"] = {};
 	    this.observers = {};
 	    this.upstreamObservers = {};
 
-	    var bindingRegExp = view.bindingRegExp();
+	    var bindingPrefix = rivets._fullPrefix;
 
 	    for (var i = 0, len = el.attributes.length; i < len; i++) {
 	      var attribute = el.attributes[i];
-	      if (!bindingRegExp.test(attribute.name)) {
+	      if (attribute.name.indexOf(bindingPrefix) !== 0) {
 	        var propertyName = this.camelCase(attribute.name);
 	        var stat = this.component["static"];
 
@@ -1210,6 +925,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      value: function bind() {
 	        var _this = this;
 
+	        var options = {};
 	        if (!this.bound) {
 	          Object.keys(this.observers).forEach(function (key) {
 	            var keypath = _this.observers[key];
@@ -1224,58 +940,54 @@ return /******/ (function(modules) { // webpackBootstrap
 	          this.bound = true;
 	        }
 
-	        if (defined(this.componentView)) {
+	        if (this.componentView) {
 	          this.componentView.bind();
 	        } else {
-	          (function () {
-	            _this.el.innerHTML = _this.component.template.call(_this);
-	            var scope = _this.component.initialize.call(_this, _this.el, _this.locals());
-	            _this.el._bound = true;
+	          this.el.innerHTML = this.component.template.call(this);
+	          var scope = this.component.initialize.call(this, this.el, this.locals());
+	          this.el._bound = true;
 
-	            var options = {};
+	          EXTENSIONS.forEach(function (extensionType) {
+	            options[extensionType] = {};
 
-	            EXTENSIONS.forEach(function (extensionType) {
-	              options[extensionType] = {};
-
-	              if (_this.component[extensionType]) {
-	                Object.keys(_this.component[extensionType]).forEach(function (key) {
-	                  options[extensionType][key] = _this.component[extensionType][key];
-	                });
-	              }
-
-	              Object.keys(_this.view[extensionType]).forEach(function (key) {
-	                if (!defined(options[extensionType][key])) {
-	                  options[extensionType][key] = _this.view[extensionType][key];
-	                }
+	            if (_this.component[extensionType]) {
+	              Object.keys(_this.component[extensionType]).forEach(function (key) {
+	                options[extensionType][key] = _this.component[extensionType][key];
 	              });
-	            });
+	            }
 
-	            OPTIONS.forEach(function (option) {
-	              if (defined(_this.component[option])) {
-	                options[option] = _this.component[option];
-	              } else {
-	                options[option] = _this.view[option];
+	            Object.keys(_this.view.options[extensionType]).forEach(function (key) {
+	              if (options[extensionType][key]) {
+	                options[extensionType][key] = _this.view[extensionType][key];
 	              }
 	            });
+	          });
 
-	            //there's a cyclic dependency that makes imported View a dummy object. Use rivets.bind
-	            //this.componentView = new View(this.el, scope, options)
-	            //this.componentView.bind()
-	            _this.componentView = rivets.bind(Array.prototype.slice.call(_this.el.childNodes), scope, options);
+	          OPTIONS.forEach(function (option) {
+	            if (_this.component[option] != null) {
+	              options[option] = _this.component[option];
+	            } else {
+	              options[option] = _this.view[option];
+	            }
+	          });
 
-	            Object.keys(_this.observers).forEach(function (key) {
-	              var observer = _this.observers[key];
-	              var models = _this.componentView.models;
+	          //there's a cyclic dependency that makes imported View a dummy object. Use rivets.bind
+	          //this.componentView = new View(this.el, scope, options)
+	          //this.componentView.bind()
+	          this.componentView = rivets.bind(Array.prototype.slice.call(this.el.childNodes), scope, options);
 
-	              var upstream = _this.observe(models, key, (function (key, observer) {
-	                return function () {
-	                  observer.setValue(_this.componentView.models[key]);
-	                };
-	              }).call(_this, key, observer));
+	          Object.keys(this.observers).forEach(function (key) {
+	            var observer = _this.observers[key];
+	            var models = _this.componentView.models;
 
-	              _this.upstreamObservers[key] = upstream;
-	            });
-	          })();
+	            var upstream = _this.observe(models, key, (function (key, observer) {
+	              return function () {
+	                observer.setValue(_this.componentView.models[key]);
+	              };
+	            }).call(_this, key, observer));
+
+	            _this.upstreamObservers[key] = upstream;
+	          });
 	        }
 	      }
 	    },
@@ -1294,7 +1006,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	          _this.observers[key].unobserve();
 	        });
 
-	        if (defined(this.componentView)) {
+	        if (this.componentView) {
 	          this.componentView.unbind.call(this);
 	        }
 	      }
@@ -1304,42 +1016,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	  return ComponentBinding;
 	})(Binding);
 
-	// A text node binding, defined internally to deal with text and element node
-	// differences while avoiding it being overwritten.
-
-	var TextBinding = exports.TextBinding = (function (_Binding2) {
-	  // Initializes a text binding for the specified view and text node.
-
-	  function TextBinding(view, el, type, keypath) {
-	    var options = arguments[4] === undefined ? {} : arguments[4];
-
-	    _classCallCheck(this, TextBinding);
-
-	    this.view = view;
-	    this.el = el;
-	    this.type = type;
-	    this.keypath = keypath;
-	    this.options = options;
-	    this.formatters = this.options.formatters || [];
-	    this.dependencies = [];
-	    this.formatterObservers = {};
-
-	    this.binder = {
-	      routine: function (node, value) {
-	        node.data = defined(value) ? value : "";
-	      }
-	    };
-
-	    this.sync = this.sync.bind(this);
-	  }
-
-	  _inherits(TextBinding, _Binding2);
-
-	  return TextBinding;
-	})(Binding);
-
 /***/ },
-/* 6 */
+/* 5 */
 /***/ function(module, exports) {
 
 	
@@ -1384,22 +1062,27 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 	function parseTemplate(template, delimiters) {
-	  var tokens = [];
+	  var tokens;
 	  var length = template.length;
 	  var index = 0;
 	  var lastIndex = 0;
+	  var open = delimiters[0],
+	      close = delimiters[1];
 
 	  while (lastIndex < length) {
-	    index = template.indexOf(delimiters[0], lastIndex);
+	    index = template.indexOf(open, lastIndex);
 
 	    if (index < 0) {
-	      tokens.push({
-	        type: TEXT,
-	        value: template.slice(lastIndex)
-	      });
+	      if (tokens) {
+	        tokens.push({
+	          type: TEXT,
+	          value: template.slice(lastIndex)
+	        });
+	      }
 
 	      break;
 	    } else {
+	      tokens || (tokens = []);
 	      if (index > 0 && lastIndex < index) {
 	        tokens.push({
 	          type: TEXT,
@@ -1407,11 +1090,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	        });
 	      }
 
-	      lastIndex = index + delimiters[0].length;
-	      index = template.indexOf(delimiters[1], lastIndex);
+	      lastIndex = index + open.length;
+	      index = template.indexOf(close, lastIndex);
 
 	      if (index < 0) {
-	        var substring = template.slice(lastIndex - delimiters[1].length);
+	        var substring = template.slice(lastIndex - close.length);
 	        var lastToken = tokens[tokens.length - 1];
 
 	        if (lastToken && lastToken.type === TEXT) {
@@ -1433,7 +1116,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        value: value
 	      });
 
-	      lastIndex = index + delimiters[1].length;
+	      lastIndex = index + close.length;
 	    }
 	  }
 
@@ -1441,46 +1124,220 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 /***/ },
-/* 7 */
+/* 6 */
 /***/ function(module, exports) {
 
+	
+	// Check if a value is an object than can be observed.
 	"use strict";
 
-	exports.bindEvent = bindEvent;
-	exports.unbindEvent = unbindEvent;
-	exports.getInputValue = getInputValue;
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-
-	function bindEvent(el, event, handler) {
-	  el.addEventListener(event, handler, false);
+	function isObject(obj) {
+	  return typeof obj === "object" && obj !== null;
 	}
 
-	function unbindEvent(el, event, handler) {
-	  el.removeEventListener(event, handler, false);
+	// Error thrower.
+	function error(message) {
+	  throw new Error("[Observer] " + message);
 	}
 
-	function getInputValue(el) {
-	  var results = [];
-	  if (el.type === "checkbox") {
-	    return el.checked;
-	  } else if (el.type === "select-multiple") {
+	var adapters;
+	var interfaces;
+	var rootInterface;
 
-	    el.options.forEach(function (option) {
-	      if (option.selected) {
-	        results.push(option.value);
-	      }
-	    });
+	// Constructs a new keypath observer and kicks things off.
+	function Observer(obj, keypath, callback) {
+	  this.keypath = keypath;
+	  this.callback = callback;
+	  this.objectPath = [];
+	  this.parse();
+	  this.obj = this.getRootObject(obj);
 
-	    return results;
-	  } else {
-	    return el.value;
+	  if (isObject(this.target = this.realize())) {
+	    this.set(true, this.key, this.target, this.callback);
 	  }
 	}
 
+	Observer.updateOptions = function (options) {
+	  adapters = options.adapters;
+	  interfaces = Object.keys(adapters);
+	  rootInterface = options.rootInterface;
+	};
+
+	// Tokenizes the provided keypath string into interface + path tokens for the
+	// observer to work with.
+	Observer.tokenize = function (keypath, root) {
+	  var tokens = [];
+	  var current = { i: root, path: "" };
+	  var index, chr;
+
+	  for (index = 0; index < keypath.length; index++) {
+	    chr = keypath.charAt(index);
+
+	    if (!! ~interfaces.indexOf(chr)) {
+	      tokens.push(current);
+	      current = { i: chr, path: "" };
+	    } else {
+	      current.path += chr;
+	    }
+	  }
+
+	  tokens.push(current);
+	  return tokens;
+	};
+
+	// Parses the keypath using the interfaces defined on the view. Sets variables
+	// for the tokenized keypath as well as the end key.
+	Observer.prototype.parse = function () {
+	  var path, root;
+
+	  if (!interfaces.length) {
+	    error("Must define at least one adapter interface.");
+	  }
+
+	  if (!! ~interfaces.indexOf(this.keypath[0])) {
+	    root = this.keypath[0];
+	    path = this.keypath.substr(1);
+	  } else {
+	    root = rootInterface;
+	    path = this.keypath;
+	  }
+
+	  this.tokens = Observer.tokenize(path, root);
+	  this.key = this.tokens.pop();
+	};
+
+	// Realizes the full keypath, attaching observers for every key and correcting
+	// old observers to any changed objects in the keypath.
+	Observer.prototype.realize = function () {
+	  var current = this.obj;
+	  var unreached = false;
+	  var prev;
+	  var token;
+
+	  for (var index = 0; index < this.tokens.length; index++) {
+	    token = this.tokens[index];
+	    if (isObject(current)) {
+	      if (typeof this.objectPath[index] !== "undefined") {
+	        if (current !== (prev = this.objectPath[index])) {
+	          this.set(false, token, prev, this);
+	          this.set(true, token, current, this);
+	          this.objectPath[index] = current;
+	        }
+	      } else {
+	        this.set(true, token, current, this);
+	        this.objectPath[index] = current;
+	      }
+
+	      current = this.get(token, current);
+	    } else {
+	      if (unreached === false) {
+	        unreached = index;
+	      }
+
+	      if (prev = this.objectPath[index]) {
+	        this.set(false, token, prev, this);
+	      }
+	    }
+	  }
+
+	  if (unreached !== false) {
+	    this.objectPath.splice(unreached);
+	  }
+
+	  return current;
+	};
+
+	// Updates the keypath. This is called when any intermediary key is changed.
+	Observer.prototype.sync = function () {
+	  var next, oldValue, newValue;
+
+	  if ((next = this.realize()) !== this.target) {
+	    if (isObject(this.target)) {
+	      this.set(false, this.key, this.target, this.callback);
+	    }
+
+	    if (isObject(next)) {
+	      this.set(true, this.key, next, this.callback);
+	    }
+
+	    oldValue = this.value();
+	    this.target = next;
+	    newValue = this.value();
+	    if (newValue !== oldValue || newValue instanceof Function) this.callback.sync();
+	  } else if (next instanceof Array) {
+	    this.callback.sync();
+	  }
+	};
+
+	// Reads the current end value of the observed keypath. Returns undefined if
+	// the full keypath is unreachable.
+	Observer.prototype.value = function () {
+	  if (isObject(this.target)) {
+	    return this.get(this.key, this.target);
+	  }
+	};
+
+	// Sets the current end value of the observed keypath. Calling setValue when
+	// the full keypath is unreachable is a no-op.
+	Observer.prototype.setValue = function (value) {
+	  if (isObject(this.target)) {
+	    adapters[this.key.i].set(this.target, this.key.path, value);
+	  }
+	};
+
+	// Gets the provided key on an object.
+	Observer.prototype.get = function (key, obj) {
+	  return adapters[key.i].get(obj, key.path);
+	};
+
+	// Observes or unobserves a callback on the object using the provided key.
+	Observer.prototype.set = function (active, key, obj, callback) {
+	  var action = active ? "observe" : "unobserve";
+	  adapters[key.i][action](obj, key.path, callback);
+	};
+
+	// Unobserves the entire keypath.
+	Observer.prototype.unobserve = function () {
+	  var obj;
+	  var token;
+
+	  for (var index = 0; index < this.tokens.length; index++) {
+	    token = this.tokens[index];
+	    if (obj = this.objectPath[index]) {
+	      this.set(false, token, obj, this);
+	    }
+	  }
+
+	  if (isObject(this.target)) {
+	    this.set(false, this.key, this.target, this.callback);
+	  }
+	};
+	// traverse the scope chain to find the scope which has the root property
+	// if the property is not found in chain, returns the root scope
+	Observer.prototype.getRootObject = function (obj) {
+	  var rootProp, current;
+	  if (!obj.$parent) {
+	    return obj;
+	  }
+
+	  if (this.tokens.length) {
+	    rootProp = this.tokens[0].path;
+	  } else {
+	    rootProp = this.key.path;
+	  }
+
+	  current = obj;
+	  while (current.$parent && current[rootProp] === undefined) {
+	    current = current.$parent;
+	  }
+
+	  return current;
+	};
+
+	module.exports = Observer;
+
 /***/ },
-/* 8 */
+/* 7 */
 /***/ function(module, exports) {
 
 	// The default `.` adapter thats comes with Rivets.js. Allows subscribing to
@@ -1492,26 +1349,25 @@ return /******/ (function(modules) { // webpackBootstrap
 	var ARRAY_METHODS = ["push", "pop", "shift", "unshift", "sort", "reverse", "splice"];
 
 	var adapter = {
-	  id: "_rv",
 	  counter: 0,
 	  weakmap: {},
 
 	  weakReference: function weakReference(obj) {
-	    if (!obj.hasOwnProperty(this.id)) {
+	    if (!obj.hasOwnProperty("__rv")) {
 	      var id = this.counter++;
 
-	      Object.defineProperty(obj, this.id, {
+	      Object.defineProperty(obj, "__rv", {
 	        value: id
 	      });
 	    }
 
-	    if (!this.weakmap[obj[this.id]]) {
-	      this.weakmap[obj[this.id]] = {
+	    if (!this.weakmap[obj.__rv]) {
+	      this.weakmap[obj.__rv] = {
 	        callbacks: {}
 	      };
 	    }
 
-	    return this.weakmap[obj[this.id]];
+	    return this.weakmap[obj.__rv];
 	  },
 
 	  cleanupWeakReference: function cleanupWeakReference(ref, id) {
@@ -1540,7 +1396,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        if (weakmap[r]) {
 	          if (weakmap[r].callbacks[k] instanceof Array) {
 	            weakmap[r].callbacks[k].forEach(function (callback) {
-	              callback();
+	              callback.sync();
 	            });
 	          }
 	        }
@@ -1575,8 +1431,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	  },
 
 	  unobserveMutations: function unobserveMutations(obj, ref, keypath) {
-	    if (obj instanceof Array && obj[this.id] != null) {
-	      var map = this.weakmap[obj[this.id]];
+	    if (obj instanceof Array && obj.__rv != null) {
+	      var map = this.weakmap[obj.__rv];
 
 	      if (map) {
 	        var pointers = map.pointers[ref];
@@ -1592,7 +1448,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            delete map.pointers[ref];
 	          }
 
-	          this.cleanupWeakReference(map, obj[this.id]);
+	          this.cleanupWeakReference(map, obj.__rv);
 	        }
 	      }
 	    }
@@ -1601,6 +1457,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  observe: function observe(obj, keypath, callback) {
 	    var _this = this;
 
+	    var value;
 	    var callbacks = this.weakReference(obj).callbacks;
 
 	    if (!callbacks[keypath]) {
@@ -1608,37 +1465,35 @@ return /******/ (function(modules) { // webpackBootstrap
 	      var desc = Object.getOwnPropertyDescriptor(obj, keypath);
 
 	      if (!desc || !(desc.get || desc.set || !desc.configurable)) {
-	        (function () {
-	          var value = obj[keypath];
+	        value = obj[keypath];
 
-	          Object.defineProperty(obj, keypath, {
-	            enumerable: true,
+	        Object.defineProperty(obj, keypath, {
+	          enumerable: true,
 
-	            get: function () {
-	              return value;
-	            },
+	          get: function () {
+	            return value;
+	          },
 
-	            set: function (newValue) {
-	              if (newValue !== value) {
-	                _this.unobserveMutations(value, obj[_this.id], keypath);
-	                value = newValue;
-	                var map = _this.weakmap[obj[_this.id]];
+	          set: function (newValue) {
+	            if (newValue !== value) {
+	              _this.unobserveMutations(value, obj.__rv, keypath);
+	              value = newValue;
+	              var map = _this.weakmap[obj.__rv];
 
-	                if (map) {
-	                  var _callbacks = map.callbacks[keypath];
+	              if (map) {
+	                var _callbacks = map.callbacks[keypath];
 
-	                  if (_callbacks) {
-	                    _callbacks.forEach(function (cb) {
-	                      cb();
-	                    });
-	                  }
-
-	                  _this.observeMutations(newValue, obj[_this.id], keypath);
+	                if (_callbacks) {
+	                  _callbacks.forEach(function (cb) {
+	                    cb.sync();
+	                  });
 	                }
+
+	                _this.observeMutations(newValue, obj.__rv, keypath);
 	              }
 	            }
-	          });
-	        })();
+	          }
+	        });
 	      }
 	    }
 
@@ -1646,11 +1501,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	      callbacks[keypath].push(callback);
 	    }
 
-	    this.observeMutations(obj[keypath], obj[this.id], keypath);
+	    this.observeMutations(obj[keypath], obj.__rv, keypath);
 	  },
 
 	  unobserve: function unobserve(obj, keypath, callback) {
-	    var map = this.weakmap[obj[this.id]];
+	    var map = this.weakmap[obj.__rv];
 
 	    if (map) {
 	      var callbacks = map.callbacks[keypath];
@@ -1663,11 +1518,11 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	          if (!callbacks.length) {
 	            delete map.callbacks[keypath];
-	            this.unobserveMutations(obj[keypath], obj[this.id], keypath);
+	            this.unobserveMutations(obj[keypath], obj.__rv, keypath);
 	          }
 	        }
 
-	        this.cleanupWeakReference(map, obj[this.id]);
+	        this.cleanupWeakReference(map, obj.__rv);
 	      }
 	    }
 	  },
@@ -1684,28 +1539,19 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = adapter;
 
 /***/ },
-/* 9 */
+/* 8 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["default"] : obj; };
 
-	var rivets = _interopRequire(__webpack_require__(2));
+	var rivets = _interopRequire(__webpack_require__(1));
 
-	var _util = __webpack_require__(7);
-
-	var bindEvent = _util.bindEvent;
-	var unbindEvent = _util.unbindEvent;
-
-	var CHANGE_EVENT = "change";
-
-	var defined = function (value) {
-	  return value !== undefined && value !== null;
-	};
+	var View = _interopRequire(__webpack_require__(3));
 
 	var getString = function (value) {
-	  return defined(value) ? value.toString() : undefined;
+	  return value != null ? value.toString() : undefined;
 	};
 
 	var times = function (n, cb) {
@@ -1715,14 +1561,146 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 	var binders = {
+	  // Binds an event handler on the element.
+	  "on-*": {
+	    "function": true,
+	    priority: 1000,
+
+	    unbind: function unbind(el) {
+	      if (this.handler) {
+	        el.addEventListener(this.arg, this.handler);
+	      }
+	    },
+
+	    routine: function routine(el, value) {
+	      if (this.handler) {
+	        el.removeEventListener(this.arg, this.handler);
+	      }
+
+	      this.handler = this.eventHandler(value);
+	      el.addEventListener(this.arg, this.handler);
+	    }
+	  },
+
+	  // Appends bound instances of the element in place for each item in the array.
+	  "each-*": {
+	    block: true,
+	    priority: 4000,
+
+	    bind: function bind(el) {
+	      if (!this.marker) {
+	        var attr = rivets._fullPrefix + this.type;
+	        this.marker = document.createComment(" rivets: " + this.type + " ");
+	        this.iterated = [];
+
+	        el.removeAttribute(attr);
+	        el.parentNode.insertBefore(this.marker, el);
+	        el.parentNode.removeChild(el);
+	      } else {
+	        this.iterated.forEach(function (view) {
+	          view.bind();
+	        });
+	      }
+	    },
+
+	    unbind: function unbind(el) {
+	      if (this.iterated) {
+	        this.iterated.forEach(function (view) {
+	          view.unbind();
+	        });
+	      }
+	    },
+
+	    routine: function routine(el, collection) {
+	      var _this = this;
+
+	      var modelName = this.arg;
+	      var collection = collection || [];
+	      var indexProp = el.getAttribute("index-property") || "$index";
+
+	      if (this.iterated.length > collection.length) {
+	        times(this.iterated.length - collection.length, function () {
+	          var view = _this.iterated.pop();
+	          view.unbind();
+	          _this.marker.parentNode.removeChild(view.els[0]);
+	        });
+	      }
+
+	      collection.forEach(function (model, index) {
+	        var data = { $parent: _this.view.models };
+	        data[indexProp] = index;
+	        data[modelName] = model;
+
+	        if (!_this.iterated[index]) {
+
+	          var previous = _this.marker;
+
+	          if (_this.iterated.length) {
+	            previous = _this.iterated[_this.iterated.length - 1].els[0];
+	          }
+
+	          //todo
+	          //options.preloadData = true
+
+	          var template = el.cloneNode(true);
+	          var view = new View(template, data, _this.view.options);
+	          view.bind();
+	          _this.iterated.push(view);
+	          _this.marker.parentNode.insertBefore(template, previous.nextSibling);
+	        } else if (_this.iterated[index].models[modelName] !== model) {
+	          _this.iterated[index].update(data);
+	        }
+	      });
+
+	      if (el.nodeName === "OPTION") {
+	        this.view.bindings.forEach(function (binding) {
+	          if (binding.el === _this.marker.parentNode && binding.type === "value") {
+	            binding.sync();
+	          }
+	        });
+	      }
+	    },
+
+	    update: function update(models) {
+	      var _this = this;
+
+	      var data = {};
+
+	      //todo: add test and fix if necessary
+
+	      Object.keys(models).forEach(function (key) {
+	        if (key !== _this.arg) {
+	          data[key] = models[key];
+	        }
+	      });
+
+	      this.iterated.forEach(function (view) {
+	        view.update(data);
+	      });
+	    }
+	  },
+
+	  // Adds or removes the class from the element when value is true or false.
+	  "class-*": function _class(el, value) {
+	    var elClass = " " + el.className + " ";
+
+	    if (!value === elClass.indexOf(" " + this.arg + " ") > -1) {
+	      if (value) {
+	        el.className = "" + el.className + " " + this.arg;
+	      } else {
+	        el.className = elClass.replace(" " + this.arg + " ", " ").trim();
+	      }
+	    }
+	  },
+
 	  // Sets the element's text value.
 	  text: function (el, value) {
-	    el.textContent = defined(value) ? value : "";
+	    el.textContent = value != null ? value : "";
 	  },
 
 	  // Sets the element's HTML content.
 	  html: function (el, value) {
-	    el.innerHTML = defined(value) ? value : "";
+	    el.innerHTML = value != null ? value : "";
 	  },
 
 	  // Shows the element when value is true.
@@ -1758,11 +1736,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	          self.publish();
 	        };
 	      }
-	      bindEvent(el, CHANGE_EVENT, this.callback);
+	      el.addEventListener("change", this.callback);
 	    },
 
 	    unbind: function unbind(el) {
-	      unbindEvent(el, CHANGE_EVENT, this.callback);
+	      el.removeEventListener("change", this.callback);
 	    },
 
 	    routine: function routine(el, value) {
@@ -1788,11 +1766,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	          self.publish();
 	        };
 	      }
-	      bindEvent(el, CHANGE_EVENT, this.callback);
+	      el.addEventListener("change", this.callback);
 	    },
 
 	    unbind: function unbind(el) {
-	      unbindEvent(el, CHANGE_EVENT, this.callback);
+	      el.removeEventListener("change", this.callback);
 	    },
 
 	    routine: function routine(el, value) {
@@ -1822,13 +1800,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	          };
 	        }
 
-	        bindEvent(el, this.event, this.callback);
+	        el.addEventListener(this.event, this.callback);
 	      }
 	    },
 
 	    unbind: function unbind(el) {
 	      if (!this.isRadio) {
-	        unbindEvent(el, this.event, this.callback);
+	        el.removeEventListener(this.event, this.callback);
 	      }
 	    },
 
@@ -1844,7 +1822,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            }
 	          }
 	        } else if (getString(value) !== getString(el.value)) {
-	          el.value = defined(value) ? value : "";
+	          el.value = value != null ? value : "";
 	        }
 	      }
 	    }
@@ -1857,7 +1835,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    bind: function bind(el) {
 	      if (!this.marker) {
-	        var attr = [this.view.prefix, this.type].join("-").replace("--", "-");
+	        var attr = rivets._fullPrefix + this.type;
 	        var declaration = el.getAttribute(attr);
 
 	        this.marker = document.createComment(" rivets: " + this.type + " " + declaration + " ");
@@ -1883,7 +1861,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	          if (this.nested) {
 	            this.nested.bind();
 	          } else {
-	            this.nested = rivets.bind(el, this.view.models, this.view.options());
+	            this.nested = new View(el, this.view.models, this.view.options);
+	            this.nested.bind();
 	          }
 
 	          this.marker.parentNode.insertBefore(el, this.marker.nextSibling);
@@ -1923,147 +1902,6 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    update: function update(models) {
 	      rivets.binders["if"].update.call(this, models);
-	    }
-	  },
-
-	  // Binds an event handler on the element.
-	  "on-*": {
-	    "function": true,
-	    priority: 1000,
-
-	    unbind: function unbind(el) {
-	      if (this.handler) {
-	        unbindEvent(el, this.args[0], this.handler);
-	      }
-	    },
-
-	    routine: function routine(el, value) {
-	      if (this.handler) {
-	        unbindEvent(el, this.args[0], this.handler);
-	      }
-
-	      this.handler = this.eventHandler(value);
-	      bindEvent(el, this.args[0], this.handler);
-	    }
-	  },
-
-	  // Appends bound instances of the element in place for each item in the array.
-	  "each-*": {
-	    block: true,
-	    priority: 4000,
-
-	    bind: function bind(el) {
-	      if (!this.marker) {
-	        var attr = [this.view.prefix, this.type].join("-").replace("--", "-");
-	        this.marker = document.createComment(" rivets: " + this.type + " ");
-	        this.iterated = [];
-
-	        el.removeAttribute(attr);
-	        el.parentNode.insertBefore(this.marker, el);
-	        el.parentNode.removeChild(el);
-	      } else {
-	        this.iterated.forEach(function (view) {
-	          view.bind();
-	        });
-	      }
-	    },
-
-	    unbind: function unbind(el) {
-	      if (this.iterated) {
-	        this.iterated.forEach(function (view) {
-	          view.unbind();
-	        });
-	      }
-	    },
-
-	    routine: function routine(el, collection) {
-	      var _this = this;
-
-	      var modelName = this.args[0];
-	      var collection = collection || [];
-	      var indexProp = el.getAttribute("index-property") || "$index";
-
-	      if (this.iterated.length > collection.length) {
-	        times(this.iterated.length - collection.length, function () {
-	          var view = _this.iterated.pop();
-	          view.unbind();
-	          _this.marker.parentNode.removeChild(view.els[0]);
-	        });
-	      }
-
-	      collection.forEach(function (model, index) {
-	        var data = { $parent: _this.view.models };
-	        data[indexProp] = index;
-	        data[modelName] = model;
-
-	        if (!_this.iterated[index]) {
-
-	          var previous = _this.marker;
-
-	          if (_this.iterated.length) {
-	            previous = _this.iterated[_this.iterated.length - 1].els[0];
-	          }
-
-	          var options = _this.view.options();
-	          options.preloadData = true;
-
-	          var template = el.cloneNode(true);
-	          var view = rivets.bind(template, data, options);
-	          _this.iterated.push(view);
-	          _this.marker.parentNode.insertBefore(template, previous.nextSibling);
-	        } else if (_this.iterated[index].models[modelName] !== model) {
-	          _this.iterated[index].update(data);
-	        }
-	      });
-
-	      if (el.nodeName === "OPTION") {
-	        this.view.bindings.forEach(function (binding) {
-	          if (binding.el === _this.marker.parentNode && binding.type === "value") {
-	            binding.sync();
-	          }
-	        });
-	      }
-	    },
-
-	    update: function update(models) {
-	      var _this = this;
-
-	      var data = {};
-
-	      //todo: add test and fix if necessary
-
-	      Object.keys(models).forEach(function (key) {
-	        if (key !== _this.args[0]) {
-	          data[key] = models[key];
-	        }
-	      });
-
-	      this.iterated.forEach(function (view) {
-	        view.update(data);
-	      });
-	    }
-	  },
-
-	  // Adds or removes the class from the element when value is true or false.
-	  "class-*": function _class(el, value) {
-	    var elClass = " " + el.className + " ";
-
-	    if (!value === elClass.indexOf(" " + this.args[0] + " ") > -1) {
-	      if (value) {
-	        el.className = "" + el.className + " " + this.args[0];
-	      } else {
-	        el.className = elClass.replace(" " + this.args[0] + " ", " ").trim();
-	      }
-	    }
-	  },
-
-	  // Sets the attribute on the element. If no binder above is matched it will fall
-	  // back to using this binder.
-	  "*": function _(el, value) {
-	    if (defined(value)) {
-	      el.setAttribute(this.type, value);
-	    } else {
-	      el.removeAttribute(this.type);
 	    }
 	  }
 	};
