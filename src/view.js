@@ -39,6 +39,12 @@ const parseNode = (view, node) => {
   }
 }
 
+const bindingComparator = (a, b) => {
+  let aPriority = a.binder ? (a.binder.priority || 0) : 0
+  let bPriority = b.binder ? (b.binder.priority || 0) : 0
+  return bPriority - aPriority
+}
+
 // A collection of bindings built from a set of parent nodes.
 export default class View {
   // The DOM elements and the model objects for binding are passed into the
@@ -88,11 +94,7 @@ export default class View {
       parseNode(this, elements[i])
     }
 
-    this.bindings.sort((a, b) => {
-      let aPriority = a.binder ? (a.binder.priority || 0) : 0
-      let bPriority = b.binder ? (b.binder.priority || 0) : 0
-      return bPriority - aPriority
-    })
+    this.bindings.sort(bindingComparator)
   }
 
   traverse(node) {
