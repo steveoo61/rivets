@@ -42,8 +42,8 @@ export class Binding {
     this.arg = arg
   }
 
-  // Observes the object keypath to run the provided callback.
-  observe(obj, keypath, callback) {
+  // Observes the object keypath
+  observe(obj, keypath) {
     return new Observer(obj, keypath, this)
   }
 
@@ -54,7 +54,7 @@ export class Binding {
       if (token.type === 0) {
         this.value = token.value
       } else {
-        this.observer = this.observe(this.view.models, this.keypath, this.sync)
+        this.observer = this.observe(this.view.models, this.keypath)
         this.model = this.observer.target
       }
     } else {
@@ -76,7 +76,7 @@ export class Binding {
           let observer = this.formatterObservers[formatterIndex][ai]
 
           if (!observer) {
-            observer = this.observe(this.view.models, value, this.sync)
+            observer = this.observe(this.view.models, value)
             this.formatterObservers[formatterIndex][ai] = observer
           }
 
@@ -146,7 +146,7 @@ export class Binding {
 
         if (this.model && deps && deps.length) {
           deps.forEach(dependency => {
-            let observer = this.observe(this.model, dependency, this.sync)
+            let observer = this.observe(this.model, dependency)
             this.dependencies.push(observer)
           })
         }
@@ -193,7 +193,7 @@ export class Binding {
 
     if (this.model && this.options.dependencies) {
       this.options.dependencies.forEach(dependency => {
-        let observer = this.observe(this.model, dependency, this.sync)
+        let observer = this.observe(this.model, dependency)
         this.dependencies.push(observer)
       })
     }
