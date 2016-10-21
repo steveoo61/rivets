@@ -48,22 +48,6 @@ rivets.bind = (el, models, options) => {
   return view
 }
 
-// Initializes a new instance of a component on the specified element and
-// returns a Rivets.View instance.
-rivets.init = (component, el, data = {}) => {
-  if (!el) {
-    el = document.createElement('div')
-  }
-
-  let component = rivets.components[component]
-  el.innerHTML = component.template.call(rivets, el)
-  let scope = component.initialize.call(rivets, el, data)
-
-  let view = rivets.bind(el, scope)
-  view.bind()
-  return view
-}
-
 rivets.formatters.negate = rivets.formatters.not = function (value) {
   return !value;
 };

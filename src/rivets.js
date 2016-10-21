@@ -4,9 +4,6 @@ const rivets = {
   // Global binders.
   binders: {},
 
-  // Global components.
-  components: {},
-
   // Global formatters.
   formatters: {},
 

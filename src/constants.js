@@ -9,6 +9,5 @@ export const OPTIONS = [
 export const EXTENSIONS = [
   'binders',
   'formatters',
-  'components',
   'adapters'
 ]

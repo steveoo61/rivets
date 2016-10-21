@@ -1,5 +1,5 @@
 import rivets from './rivets'
-import {Binding, ComponentBinding} from './bindings'
+import {Binding} from './bindings'
 import {parseTemplate} from './parsers'
 
 const textBinder = {
@@ -142,15 +142,6 @@ export default class View {
       let bindInfo = bindInfos[i]
       this.buildBinding(node, bindInfo.type, bindInfo.attr.value, bindInfo.binder, bindInfo.arg)
       node.removeAttribute(bindInfo.attr.name)
-    }
-
-    if (!block) {
-      let type = node.nodeName.toLowerCase()
-
-      if (this.options.components[type] && !node._bound) {
-        this.bindings.push(new ComponentBinding(this, node, type))
-        block = true
-      }
     }
 
     return block
