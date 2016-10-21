@@ -79,7 +79,7 @@ Observer.prototype.parse = function() {
 // old observers to any changed objects in the keypath.
 Observer.prototype.realize = function() {
   var current = this.obj
-  var unreached = false
+  var unreached = -1
   var prev
   var token
 
@@ -99,7 +99,7 @@ Observer.prototype.realize = function() {
 
       current = this.get(token, current)
     } else {
-      if (unreached === false) {
+      if (unreached === -1) {
         unreached = index
       }
 
@@ -109,7 +109,7 @@ Observer.prototype.realize = function() {
     }
   }
 
-  if (unreached !== false) {
+  if (unreached !== -1) {
     this.objectPath.splice(unreached)
   }
 
