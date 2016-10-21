@@ -64,4 +64,8 @@ rivets.init = (component, el, data = {}) => {
   return view
 }
 
+rivets.formatters.negate = rivets.formatters.not = function (value) {
+  return !value;
+};
+
 export default rivets

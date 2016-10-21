@@ -194,36 +194,6 @@ const binders = {
     }
   },
 
-  // Unchecks a checkbox or radio input when the value is true (negated version of
-  // `checked` binder). Also sets the model property when the input is checked or
-  // unchecked (two-way binder).
-  unchecked: {
-    publishes: true,
-    priority: 2000,
-
-    bind: function(el) {
-      var self = this;
-      if (!this.callback) {
-        this.callback = function () {
-          self.publish();
-        }
-      }
-      el.addEventListener('change', this.callback)
-    },
-
-    unbind: function(el) {
-      el.removeEventListener('change', this.callback)
-    },
-
-    routine: function(el, value) {
-      if (el.type === 'radio') {
-        el.checked = getString(el.value) !== getString(value)
-      } else {
-        el.checked = !value
-      }
-    }
-  },
-
   // Sets the element's value. Also sets the model property when the input changes
   // (two-way binder).
   value: {
@@ -317,29 +287,6 @@ const binders = {
       if (this.nested) {
         this.nested.update(models)
       }
-    }
-  },
-
-  // Removes and unbinds the element and it's child nodes into the DOM when true
-  // (negated version of `if` binder).
-  unless: {
-    block: true,
-    priority: 4000,
-
-    bind: function(el) {
-      rivets.binders.if.bind.call(this, el)
-    },
-
-    unbind: function() {
-      rivets.binders.if.unbind.call(this)
-    },
-
-    routine: function(el, value) {
-      rivets.binders.if.routine.call(this, el, !value)
-    },
-
-    update: function(models) {
-      rivets.binders.if.update.call(this, models)
     }
   }
 }
