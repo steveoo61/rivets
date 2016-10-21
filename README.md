@@ -10,7 +10,11 @@ This branch is used to keep the changes necessary to fit my needs:
 * Integrate sightglass into rivets code base
 * Remove view.select method 
 * Rename binding property args to arg and changed type from array to string
-
+* The rv-* attributes are removed after binding
+* Remove unless and unchecked binders
+* Add not/negate formatter
+* Changes how observer is registered / notified. Instead of passing a function (sync), pass an object with a sync method
+* Remove component binding -> buggy, untested code. Prefer standard compliant custom component implementation 
 
 # Rivets.js
 
