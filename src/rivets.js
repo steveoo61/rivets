@@ -1,4 +1,4 @@
-import {OPTIONS, EXTENSIONS} from './constants'
+import {EXTENSIONS} from './constants'
 
 const rivets = {
   // Global binders.
