@@ -1,4 +1,3 @@
-import rivets from './rivets'
 import View from './view'
 
 const getString = (value) => {
@@ -38,11 +37,9 @@ const binders = {
 
       bind: function(el) {
       if (!this.marker) {
-        let attr = rivets._fullPrefix + this.type
         this.marker = document.createComment(` rivets: ${this.type} `)
         this.iterated = []
 
-        el.removeAttribute(attr)
         el.parentNode.insertBefore(this.marker, el)
         el.parentNode.removeChild(el)
       } else {
@@ -280,13 +277,9 @@ const binders = {
 
     bind: function(el) {
       if (!this.marker) {
-        let attr = rivets._fullPrefix + this.type
-        let declaration = el.getAttribute(attr)
-
-        this.marker = document.createComment(' rivets: ' + this.type + ' ' + declaration + ' ');
+        this.marker = document.createComment(' rivets: ' + this.type + ' ' + this.keypath + ' ');
         this.bound = false
 
-        el.removeAttribute(attr)
         el.parentNode.insertBefore(this.marker, el)
         el.parentNode.removeChild(el)
       }

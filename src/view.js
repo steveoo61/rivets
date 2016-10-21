@@ -130,6 +130,7 @@ export default class View {
 
         if (binder.block) {
           this.buildBinding(node, type, attribute.value, binder, arg)
+          node.removeAttribute(attribute.name)
           return true;
         }
 
@@ -140,6 +141,7 @@ export default class View {
     for (let i = 0; i < bindInfos.length; i++) {
       let bindInfo = bindInfos[i]
       this.buildBinding(node, bindInfo.type, bindInfo.attr.value, bindInfo.binder, bindInfo.arg)
+      node.removeAttribute(bindInfo.attr.name)
     }
 
     if (!block) {
