@@ -253,6 +253,21 @@ describe("Rivets.binders", function() {
       Should(nestedEl.innerHTML).be.exactly("42");
     });
 
+    it("respects nested if state after rebind", function() {
+      var nestedEl = document.createElement("div");
+      nestedEl.setAttribute("rv-if", "data.showNested");
+      el.appendChild(nestedEl);
+
+      var view = rivets.bind(fragment, model);
+
+      model.data.showNested = true;
+      Should(el.contains(nestedEl)).be.true;
+      model.data.show = false;
+      model.data.showNested = false;
+      model.data.show = true;
+      Should(el.contains(nestedEl)).be.false;
+    });
+
     it("does not throw when root scope is reset", function () {
       el.setAttribute('rv-if', 'scope.error.errors');
       el.innerHTML = '<div>{scope.error.errors.email}</div>';
