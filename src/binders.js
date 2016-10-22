@@ -248,13 +248,14 @@ const binders = {
     bind: function(el) {
       if (!this.marker) {
         this.marker = document.createComment(' rivets: ' + this.type + ' ' + this.keypath + ' ');
-        this.visible = false
+        this.attached = false
 
         el.parentNode.insertBefore(this.marker, el)
         el.parentNode.removeChild(el)
       } else if (this.bound === false && this.nested) {
         this.nested.bind()
       }
+      this.bound = true
     },
 
     unbind: function() {
@@ -265,7 +266,7 @@ const binders = {
     },
 
     routine: function(el, value) {
-      if (!!value !== this.visible) {
+      if (!!value !== this.attached) {
         if (value) {
 
           if (this.nested) {
@@ -276,11 +277,11 @@ const binders = {
           }
 
           this.marker.parentNode.insertBefore(el, this.marker.nextSibling)
-          this.visible = true
+          this.attached = true
         } else {
           el.parentNode.removeChild(el)
           this.nested.unbind()
-          this.visible = false
+          this.attached = false
         }
       }
     },
