@@ -269,9 +269,7 @@ const binders = {
       if (!!value !== this.attached) {
         if (value) {
 
-          if (this.nested) {
-            this.nested.bind()
-          } else {
+          if (!this.nested) {
             this.nested = new View(el, this.view.models, this.view.options)
             this.nested.bind()
           }
@@ -280,7 +278,6 @@ const binders = {
           this.attached = true
         } else {
           el.parentNode.removeChild(el)
-          this.nested.unbind()
           this.attached = false
         }
       }
