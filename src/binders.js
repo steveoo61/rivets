@@ -59,7 +59,7 @@ const binders = {
 
     routine: function(el, collection) {
       let modelName = this.arg
-      let collection = collection || []
+      collection = collection || []
       let indexProp = el.getAttribute('index-property') || '$index'
 
       if (this.iterated.length > collection.length) {

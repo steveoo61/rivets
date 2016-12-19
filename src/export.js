@@ -52,4 +52,4 @@ rivets.formatters.negate = rivets.formatters.not = function (value) {
   return !value;
 };
 
-export default rivets
+module.exports = rivets
